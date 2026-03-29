@@ -1,0 +1,294 @@
+{
+  "meta": {
+    "lastTouchedVersion": "2026.3.28",
+    "lastTouchedAt": "2026-03-29T14:00:48.129Z"
+  },
+  "secrets": {
+    "providers": {
+      "runtime": {
+        "source": "file",
+        "path": "/home/admin/.openclaw/runtime-secrets.json",
+        "mode": "json"
+      }
+    },
+    "defaults": {
+      "file": "runtime"
+    }
+  },
+  "auth": {
+    "profiles": {
+      "google:primary": {
+        "provider": "google",
+        "mode": "token"
+      },
+      "google:secondary": {
+        "provider": "google",
+        "mode": "token"
+      },
+      "google:tertiary": {
+        "provider": "google",
+        "mode": "token"
+      },
+      "minimax:primary": {
+        "provider": "minimax",
+        "mode": "token"
+      }
+    },
+    "order": {
+      "google": [
+        "google:primary",
+        "google:secondary",
+        "google:tertiary"
+      ],
+      "minimax": [
+        "minimax:primary"
+      ]
+    }
+  },
+  "agents": {
+    "defaults": {
+      "sandbox": {
+        "mode": "non-main"
+      }
+    },
+    "list": [
+      {
+        "id": "chief-of-staff",
+        "default": true,
+        "workspace": "/home/admin/.openclaw/workspace-chief",
+        "agentDir": "/home/admin/.openclaw/agents/chief-of-staff/agent",
+        "model": {
+          "primary": "google/gemini-3.1-flash-lite-preview",
+          "fallbacks": [
+            "minimax/MiniMax-M2.7"
+          ]
+        }
+      },
+      {
+        "id": "work-hub",
+        "workspace": "/home/admin/.openclaw/workspace-work",
+        "agentDir": "/home/admin/.openclaw/agents/work-hub/agent",
+        "model": {
+          "primary": "google/gemini-3.1-flash-lite-preview",
+          "fallbacks": [
+            "google/gemini-3.1-pro-preview",
+            "minimax/MiniMax-M2.7"
+          ]
+        }
+      },
+      {
+        "id": "venture-hub",
+        "workspace": "/home/admin/.openclaw/workspace-venture",
+        "agentDir": "/home/admin/.openclaw/agents/venture-hub/agent",
+        "model": {
+          "primary": "google/gemini-3.1-flash-lite-preview",
+          "fallbacks": [
+            "google/gemini-3.1-pro-preview",
+            "minimax/MiniMax-M2.7"
+          ]
+        }
+      },
+      {
+        "id": "life-hub",
+        "workspace": "/home/admin/.openclaw/workspace-life",
+        "agentDir": "/home/admin/.openclaw/agents/life-hub/agent",
+        "model": {
+          "primary": "google/gemini-3.1-flash-lite-preview",
+          "fallbacks": [
+            "minimax/MiniMax-M2.7"
+          ]
+        }
+      },
+      {
+        "id": "product-studio",
+        "workspace": "/home/admin/.openclaw/workspace-product",
+        "agentDir": "/home/admin/.openclaw/agents/product-studio/agent",
+        "model": {
+          "primary": "google/gemini-3.1-pro-preview",
+          "fallbacks": [
+            "google/gemini-3.1-flash-lite-preview",
+            "minimax/MiniMax-M2.7"
+          ]
+        }
+      }
+    ]
+  },
+  "tools": {
+    "profile": "coding"
+  },
+  "bindings": [
+    {
+      "type": "route",
+      "agentId": "chief-of-staff",
+      "comment": "Telegram chief account routes to chief-of-staff.",
+      "match": {
+        "channel": "telegram",
+        "accountId": "chief"
+      }
+    },
+    {
+      "type": "route",
+      "agentId": "venture-hub",
+      "comment": "Personal Telegram venture group routes to venture-hub.",
+      "match": {
+        "channel": "telegram",
+        "accountId": "personal",
+        "peer": {
+          "kind": "group",
+          "id": "-1003839165807"
+        }
+      }
+    },
+    {
+      "type": "route",
+      "agentId": "life-hub",
+      "comment": "Personal Telegram life group routes to life-hub.",
+      "match": {
+        "channel": "telegram",
+        "accountId": "personal",
+        "peer": {
+          "kind": "group",
+          "id": "-1003872666315"
+        }
+      }
+    },
+    {
+      "type": "route",
+      "agentId": "life-hub",
+      "comment": "All remaining traffic on the personal Telegram account routes to life-hub.",
+      "match": {
+        "channel": "telegram",
+        "accountId": "personal"
+      }
+    },
+    {
+      "type": "route",
+      "agentId": "work-hub",
+      "comment": "Feishu work account routes to work-hub.",
+      "match": {
+        "channel": "feishu",
+        "accountId": "work"
+      }
+    }
+  ],
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+  "session": {
+    "dmScope": "per-channel-peer"
+  },
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "session-memory": {
+          "enabled": true
+        },
+        "command-logger": {
+          "enabled": true
+        },
+        "boot-md": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "dmPolicy": "pairing",
+      "groupPolicy": "allowlist",
+      "streaming": "partial",
+      "accounts": {
+        "chief": {
+          "name": "Telegram Chief",
+          "enabled": true,
+          "dmPolicy": "pairing",
+          "botToken": {
+            "source": "file",
+            "provider": "runtime",
+            "id": "/TELEGRAM_BOT_TOKEN_CHIEF"
+          },
+          "groupPolicy": "allowlist",
+          "streaming": "partial"
+        },
+        "personal": {
+          "name": "Telegram Personal",
+          "enabled": true,
+          "dmPolicy": "pairing",
+          "botToken": {
+            "source": "file",
+            "provider": "runtime",
+            "id": "/TELEGRAM_BOT_TOKEN_PERSONAL"
+          },
+          "groupPolicy": "allowlist",
+          "streaming": "partial",
+          "groups": {
+            "-1003839165807": {
+              "enabled": true,
+              "groupPolicy": "allowlist"
+            },
+            "-1003872666315": {
+              "enabled": true,
+              "groupPolicy": "allowlist"
+            }
+          }
+        }
+      }
+    },
+    "feishu": {
+      "enabled": true,
+      "defaultAccount": "work",
+      "connectionMode": "websocket",
+      "accounts": {
+        "work": {
+          "enabled": true,
+          "name": "Feishu Work",
+          "appId": "cli_a93c20939cf8dbef",
+          "appSecret": {
+            "source": "file",
+            "provider": "runtime",
+            "id": "/FEISHU_APP_SECRET"
+          },
+          "dmPolicy": "pairing",
+          "groupPolicy": "allowlist"
+        }
+      },
+      "domain": "feishu",
+      "webhookPath": "/feishu/events",
+      "dmPolicy": "pairing",
+      "groupPolicy": "allowlist",
+      "reactionNotifications": "own",
+      "typingIndicator": true,
+      "resolveSenderNames": true
+    }
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "loopback",
+    "auth": {
+      "mode": "token",
+      "token": "__REDACTED_GATEWAY_TOKEN__"
+    },
+    "tailscale": {
+      "mode": "off",
+      "resetOnExit": false
+    }
+  },
+  "plugins": {
+    "slots": {
+      "memory": "memory-core",
+      "contextEngine": "legacy"
+    },
+    "entries": {
+      "feishu": {
+        "enabled": true,
+        "config": {}
+      }
+    }
+  }
+}
