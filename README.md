@@ -230,6 +230,7 @@
 - [docs/communication_manual.md](docs/communication_manual.md)
 - [docs/system_full_snapshot.md](docs/system_full_snapshot.md)
 - [docs/OpenClaw_个人数字人体系设计文档_V1.md](docs/OpenClaw_个人数字人体系设计文档_V1.md)
+- [docs/upgrade_runbook.md](docs/upgrade_runbook.md)
 - [docs/openclaw_execution_dump/execution_report.md](docs/openclaw_execution_dump/execution_report.md)
 - [scripts/bootstrap_openclaw_rebuild.sh](scripts/bootstrap_openclaw_rebuild.sh)
 
