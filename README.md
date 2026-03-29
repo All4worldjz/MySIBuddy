@@ -228,6 +228,7 @@
 - [docs/USER.md](docs/USER.md)
 - [docs/openclaw.json.template](docs/openclaw.json.template)
 - [docs/communication_manual.md](docs/communication_manual.md)
+- [docs/system_full_snapshot.md](docs/system_full_snapshot.md)
 - [docs/openclaw_execution_dump/execution_report.md](docs/openclaw_execution_dump/execution_report.md)
 - [scripts/bootstrap_openclaw_rebuild.sh](scripts/bootstrap_openclaw_rebuild.sh)
 
@@ -245,4 +246,3 @@
 1. 接入 Feishu calendar / tasks
 2. 把 `cron` 做成正式提醒工作流
 3. 收紧安全边界，尤其是 sandbox 和工具暴露面
-
