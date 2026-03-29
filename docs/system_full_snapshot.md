@@ -135,6 +135,84 @@ Operational meaning:
 
 This confirms that the routing layer is not just statically configured; it has been exercised at runtime.
 
+## Boot Persistence and Restart Recovery
+
+A dedicated boot and service persistence check was completed after the main rebuild work.
+
+### Verified Boot-Relevant Conditions
+
+The remote host currently satisfies the key conditions required for OpenClaw to come back after an OS reboot:
+
+- user lingering is enabled for `admin`
+- the gateway runs as a `systemd --user` service
+- the service is `enabled`
+- the service is already attached to the user default target
+- the service has an automatic restart policy
+- the service uses absolute paths for Node and the OpenClaw entry point
+- the service environment explicitly defines `PATH`, `HOME`, and related runtime values
+
+Observed values during the latest inspection:
+
+- `loginctl show-user admin -p Linger` -> `Linger=yes`
+- `systemctl --user is-enabled openclaw-gateway` -> `enabled`
+- `systemctl --user is-active openclaw-gateway` -> `active`
+- service file:
+  - `/home/admin/.config/systemd/user/openclaw-gateway.service`
+- enable symlink:
+  - `/home/admin/.config/systemd/user/default.target.wants/openclaw-gateway.service`
+- restart policy:
+  - `Restart=always`
+  - `RestartSec=5`
+
+### Current Service Shape
+
+The live user service currently includes:
+
+- `After=network-online.target`
+- `Wants=network-online.target`
+- absolute Node path:
+  - `/home/admin/.nvm/versions/node/v24.14.1/bin/node`
+- absolute OpenClaw entry path:
+  - `/home/admin/.nvm/versions/node/v24.14.1/lib/node_modules/openclaw/dist/index.js`
+
+This matters because the service does not depend on an interactive login shell or a fragile inherited environment.
+
+### Recovery Test Performed
+
+A live restart recovery test was run by:
+
+1. restarting `openclaw-gateway`
+2. waiting for the service to return
+3. re-checking `openclaw status`
+4. re-checking `openclaw channels status --probe`
+
+Result:
+
+- the service returned to `active`
+- gateway status returned healthy
+- Telegram `chief` still worked
+- Telegram `personal` still worked
+- Feishu `work` still worked
+
+### Important Upgrade Caveat
+
+The current service file hard-codes the Node installation path under:
+
+- `/home/admin/.nvm/versions/node/v24.14.1/...`
+
+This is stable for the current deployment, but it means future Node or OpenClaw upgrades must account for the service file.
+
+Operational implication:
+
+- if Node is upgraded in place but the old `v24.14.1` path is removed, the gateway will fail to start
+- any future Node version migration should include a review and, if needed, rewrite of:
+  - `/home/admin/.config/systemd/user/openclaw-gateway.service`
+
+Conclusion:
+
+- current reboot recovery posture is good
+- future runtime upgrades should explicitly include a service-unit validation step
+
 ## Model and Auth State
 
 ### Live Model Assignment
