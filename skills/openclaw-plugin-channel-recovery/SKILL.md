@@ -222,11 +222,45 @@ When introducing a second Feishu app:
 - avoid keeping an old global top-level `channels.feishu.allowFrom`
 - different Feishu apps can resolve the same person to different ids
 - a global allowlist can block the new app unintentionally
+- do not keep the old app both at top-level `channels.feishu.appId/appSecret` and again under `channels.feishu.accounts.work`
+- in multi-account Feishu mode, do not keep `channels.feishu.accounts.default` unless it is a real distinct account you intentionally route
 
 Safer pattern:
 
 - move allowlists down to the specific account that needs them
 - keep new app pairing and allowlist independent
+- keep only real Feishu app accounts such as `work` and `scribe`
+
+### Feishu Duplicate Account Failure Mode
+
+This was observed in production.
+
+Symptom:
+
+- the old Feishu bot is online but replies only intermittently
+- a new Feishu bot works normally at the same time
+
+What happens:
+
+- the same old Feishu app is loaded twice as `feishu[work]` and `feishu[default]`
+- both connections resolve to the same bot `open_id`
+- inbound events can land on either connection
+- the `default` account often has no correct DM allowlist or pairing state
+- the message is then dropped even though the bot appears healthy
+
+Log signature:
+
+- `feishu[work]: bot open_id resolved: ...`
+- `feishu[default]: bot open_id resolved: ...`
+- `feishu[default]: sender ... not in DM allowlist`
+
+Corrective action:
+
+1. remove top-level `channels.feishu.appId`
+2. remove top-level `channels.feishu.appSecret`
+3. remove `channels.feishu.accounts.default`
+4. keep the old bot only under the explicit real account, for example `work`
+5. restart and confirm `openclaw status --deep` reports only the intended Feishu accounts
 
 ## Telegram-Specific Lessons
 

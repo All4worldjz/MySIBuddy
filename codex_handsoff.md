@@ -88,8 +88,40 @@
 
 说明：
 
-- `default` / “空壳继承账号” 会制造歧义，能不用就不用
+- Feishu 多账号模式下，不要保留顶层 `channels.feishu.appId` / `appSecret`
+- Feishu 多账号模式下，不要再保留 `channels.feishu.accounts.default`
+- 否则同一个旧 Feishu app 可能被同时挂成 `work` 和 `default` 两个连接，导致消息间歇性落到错误账号
 - 新增 bot 账号时，优先按“一个账号对应一个长期角色”设计
+
+### Feishu Duplicate-Account Trap
+
+这是已经在生产环境里真实踩过的坑。
+
+触发条件：
+
+- 顶层 `channels.feishu.appId` / `appSecret` 还保留着旧 app
+- `channels.feishu.accounts.work` 也配置了同一个旧 app
+- 同时还存在 `channels.feishu.accounts.default`
+
+结果：
+
+- `openclaw-lark` 会把同一个旧 Feishu app 同时挂成 `feishu[work]` 和 `feishu[default]`
+- 两个连接会解析出同一个 bot `open_id`
+- 同一用户消息会不稳定地落到任意一个连接
+- 如果 `default` 的 `dmPolicy` / `allowFrom` 没配对，就会出现“bot 在线但偶发不回”的现象
+
+日志特征：
+
+- `feishu[work]: bot open_id resolved: <same_open_id>`
+- `feishu[default]: bot open_id resolved: <same_open_id>`
+- `feishu[default]: sender ... not in DM allowlist`
+
+最小修复：
+
+1. 从顶层 `channels.feishu` 删除旧 app 的 `appId` / `appSecret`
+2. 删除 `channels.feishu.accounts.default`
+3. 只保留真实需要的独立 Feishu app 账号，例如 `work` 和 `scribe`
+4. 重启 gateway 后确认 `openclaw status --deep` 变成 `Feishu accounts 2/2`
 
 ## Required Bindings
 
