@@ -1,6 +1,6 @@
 # MySiBuddy
 
-`MySiBuddy` is a local project scaffold for setting up and extending Openclaw.
+`MySiBuddy` is a local repo for deploying, hardening, and operating the current OpenClaw-based personal agent system.
 
 ## Branch Strategy
 
@@ -9,18 +9,16 @@
 
 ## Project Structure
 
-- `config/openclaw/`: Openclaw config templates
-- `docs/`: setup and operating notes
-- `skills/`: reusable Codex skills for MySiBuddy operations
+- `codex_handsoff.md`: single handoff document for rebuilding the current production system in a new environment
+- `config/openclaw/`: OpenClaw config templates
+- `skills/`: reusable Codex skills for deployment, tuning, and recovery
 - `scripts/`: bootstrap and validation scripts
-- `src/`: application code for future MySiBuddy features
 
-## Quick Start
+## Recommended Entry Points
 
-1. Copy `.env.example` to `.env`.
-2. Review `config/openclaw/openclaw.example.json`.
-3. Run `./scripts/bootstrap_openclaw.sh`.
-4. Start implementing project code in `src/`.
+- Start with [`codex_handsoff.md`](codex_handsoff.md) when asking Codex to rebuild or migrate the current system onto a fresh host.
+- Use [`skills/openclaw-plugin-channel-recovery/SKILL.md`](skills/openclaw-plugin-channel-recovery/SKILL.md) when asking Codex to deploy, harden, tune, or troubleshoot OpenClaw.
+- Use [`config/openclaw/openclaw.example.json`](config/openclaw/openclaw.example.json) only as a template artifact, not as the full production truth.
 
 ## Git
 
@@ -28,5 +26,8 @@ This repository is initialized with `main` and `dev` branches.
 
 ## Operational Docs
 
-- [`docs/setup-openclaw.md`](docs/setup-openclaw.md): base setup notes
-- [`docs/openclaw-incident-2026-03-30-telegram-feishu.md`](docs/openclaw-incident-2026-03-30-telegram-feishu.md): postmortem for the Telegram outage caused by plugin allowlist narrowing after `openclaw-lark` rollout
+- [`codex_handsoff.md`](codex_handsoff.md): authoritative deployment handoff for reproducing the full current OpenClaw topology, routing, auth artifacts, bot bindings, and validation flow on a new environment
+
+## Reusable Skills
+
+- [`skills/openclaw-plugin-channel-recovery/SKILL.md`](skills/openclaw-plugin-channel-recovery/SKILL.md): unified Codex runbook for OpenClaw deployment, plugin and channel policy, multi-agent routing, new-agent auth fixes, and production troubleshooting
