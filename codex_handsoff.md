@@ -370,6 +370,130 @@ cp /home/admin/.openclaw/agents/chief-of-staff/agent/models.json /home/admin/.op
 
 在没有确认自动化覆盖这两份文件之前，不要假设“新 agent 自然继承主 agent 的模型认证”。
 
+## Gemini Multi-Key Design
+
+这里要把原理说清楚，避免后续误配。
+
+### 核心原理
+
+- Gemini 官方 API 每次请求只会携带并校验一个 API key
+- 所谓“配置多个 Gemini API key”，本质上不是把多个 key 同时发给 Google
+- 真正做法是在 OpenClaw 本地维护多个 `google` auth profile，再定义 provider 内部的认证顺序
+- 先发生的是 `google` provider 内部 key/profile failover
+- 只有所有 `google` profile 都失败后，才应该进入 model fallback，例如切到 `minimax`
+
+也就是说：
+
+- 多 key = 客户端侧 auth pool / failover 策略
+- 不是 Gemini 服务端的“单项多 key 配置”
+- `auth.order.google` 解决的是容错和限额隔离，不天然等于负载均衡
+
+### 当前仓库推荐命名
+
+- `google:primary`
+- `google:secondary`
+- `google:tertiary`
+
+MiniMax 保持：
+
+- `minimax:primary`
+
+### 建议配置形态
+
+在 `openclaw.json` 里显式写出 provider 内部顺序：
+
+```json
+{
+  "auth": {
+    "order": {
+      "google": [
+        "google:primary",
+        "google:secondary",
+        "google:tertiary"
+      ],
+      "minimax": ["minimax:primary"]
+    }
+  }
+}
+```
+
+这个顺序的含义是：
+
+1. 先尝试 `google:primary`
+2. 主 key 命中配额/临时失效/被撤销时，再尝试 `google:secondary`
+3. 再失败时，尝试 `google:tertiary`
+4. 三个 Google profile 都不可用后，才进入 agent 级 model fallback
+
+### Secret 注入方式
+
+不要把真实 Gemini key 写进 `openclaw.json`。
+
+用 auth profile 注入：
+
+```bash
+openclaw models auth paste-token --provider google --profile-id "google:primary"
+openclaw models auth paste-token --provider google --profile-id "google:secondary"
+openclaw models auth paste-token --provider google --profile-id "google:tertiary"
+openclaw models auth paste-token --provider minimax --profile-id "minimax:primary"
+```
+
+再设置 provider 内顺序：
+
+```bash
+openclaw models auth order set --provider google google:primary google:secondary google:tertiary
+openclaw models auth order set --provider minimax minimax:primary
+```
+
+说明：
+
+- 上面这组 CLI 名称是本仓库既有运行方式的推荐形态
+- 如果本机 `openclaw` 子命令在当前版本里有差异，以 `openclaw models auth --help` 实际输出为准
+- 但原则不变：真实 key 进入 auth profiles，顺序进入 `auth.order`
+
+### 这套设计真正解决什么
+
+- 单 key 配额打满时，降低整套系统直接雪崩的概率
+- 某个 key 被临时封禁或撤销时，保留同 provider 的连续性
+- 可以把高价值 agent 继续统一绑定在 Gemini，而不是过早切到其他 provider
+- 便于轮换：替换一个 profile，不需要整体改 agent model 设计
+
+### 这套设计不解决什么
+
+- 它不是并发意义上的自动负载均衡
+- 它不会把一半请求稳定打到 `secondary`
+- 如果 `primary` 一直健康，绝大多数请求仍会停留在 `primary`
+
+如果目标是长期横向摊平流量，而不是故障切换，需要额外做一层：
+
+- 按 agent 拆 profile / 拆模型别名
+- 或在 OpenClaw 前面放自建 proxy / gateway 做 key-aware routing
+
+### 生产建议
+
+推荐把三个 Google key 按职责区分，而不是随手堆三把一样的 key：
+
+- `google:primary`：主生产流量
+- `google:secondary`：热备，兼顾中等流量
+- `google:tertiary`：应急和人工诊断
+
+不要把它们都看成完全对等的匿名 key。
+
+### 运行与排障规则
+
+1. 如果报 `No API key found for provider "google"`，优先查 `agentDir/auth-profiles.json`
+2. 如果只有某个 agent 报错，而别的 agent 正常，优先查该 agent 的 `auth-profiles.json` / `models.json` 是否缺失或漂移
+3. 如果 Google 模型偶发失败但 MiniMax fallback 正常，优先查 Google profile 顺序和单 key 配额
+4. 不要把“Google 模型 fallback 到 MiniMax”误判成“多 key 生效良好”，那往往意味着 provider 内 key 池已经失效
+
+### 验收标准
+
+至少确认：
+
+1. `auth.order.google` 已显式包含 `google:primary` / `secondary` / `tertiary`
+2. 每个需要跑 Gemini 的 `agentDir` 内都存在 `auth-profiles.json` 和 `models.json`
+3. `tech-mentor` 直接调用时优先命中 Gemini，而不是直接掉到 MiniMax
+4. 替换或撤销某一个 Google key 后，系统仍能通过后续 profile 恢复
+
 ## Feishu Specific Trap
 
 当新增第二个 Feishu app 时，不要把旧的顶层 `channels.feishu.allowFrom` 继续留在全局。

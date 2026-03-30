@@ -215,6 +215,78 @@ cp /home/admin/.openclaw/agents/chief-of-staff/agent/models.json /home/admin/.op
 
 Do not assume new agents inherit model credentials automatically.
 
+## Gemini Multi-Key Rule
+
+Treat Gemini multi-key as a provider-auth design, not as a model-name trick.
+
+Core facts:
+
+- Gemini validates one API key per request
+- multiple Gemini keys are implemented on the client side as multiple `google` auth profiles
+- provider-level auth failover should happen before model fallback
+- `auth.order.google` gives ordered failover, not steady-state load balancing
+
+Recommended profile ids:
+
+- `google:primary`
+- `google:secondary`
+- `google:tertiary`
+
+Recommended config shape:
+
+```json
+{
+  "auth": {
+    "order": {
+      "google": [
+        "google:primary",
+        "google:secondary",
+        "google:tertiary"
+      ],
+      "minimax": ["minimax:primary"]
+    }
+  }
+}
+```
+
+Recommended injection flow:
+
+```bash
+openclaw models auth paste-token --provider google --profile-id "google:primary"
+openclaw models auth paste-token --provider google --profile-id "google:secondary"
+openclaw models auth paste-token --provider google --profile-id "google:tertiary"
+openclaw models auth paste-token --provider minimax --profile-id "minimax:primary"
+openclaw models auth order set --provider google google:primary google:secondary google:tertiary
+openclaw models auth order set --provider minimax minimax:primary
+```
+
+Version note:
+
+- if the exact CLI subcommand names differ on the host, adapt to the local `openclaw models auth --help`
+- do not change the design principle: secrets live in auth profiles, order lives in config
+
+Operational meaning:
+
+1. `google:primary` handles normal traffic
+2. `google:secondary` is first hot standby
+3. `google:tertiary` is last-resort standby / diagnostics
+4. only after all Google profiles fail should the agent fall back to another provider such as MiniMax
+
+Do not assume this gives traffic spreading.
+
+If `google:primary` is healthy, most requests will stay on it.
+
+If you need true multi-key throughput spreading, add one of these on top:
+
+- split high-QPS agents across dedicated Google profiles
+- or add an upstream proxy that performs key-aware routing
+
+Fast triage:
+
+- `No API key found for provider "google"` usually means missing `agentDir/auth-profiles.json`, not a model-name problem
+- one agent failing while others succeed usually means that agent's auth files drifted
+- frequent fallback from Gemini to MiniMax is not success; it usually means the Google auth pool is degraded
+
 ## Feishu-Specific Lessons
 
 When introducing a second Feishu app:
