@@ -1,54 +1,69 @@
-# Repository Guidelines
+# Repository Agent Rules
 
-## Project Structure & Module Organization
+This file defines how Codex must operate in this repository.
 
-This repository is an operations and deployment guide for an OpenClaw-based agent system, not a traditional app codebase.
+## 1. Scope
 
-- [`codex_handsoff.md`](/Users/whoami2028/Workshop/GITREPO/MySiBuddy/codex_handsoff.md): authoritative rebuild guide for a fresh host
-- [`skills/openclaw-plugin-channel-recovery/SKILL.md`](/Users/whoami2028/Workshop/GITREPO/MySiBuddy/skills/openclaw-plugin-channel-recovery/SKILL.md): troubleshooting and recovery runbook
-- [`config/openclaw/openclaw.example.json`](/Users/whoami2028/Workshop/GITREPO/MySiBuddy/config/openclaw/openclaw.example.json): template config only, not production truth
-- [`scripts/bootstrap_openclaw.sh`](/Users/whoami2028/Workshop/GITREPO/MySiBuddy/scripts/bootstrap_openclaw.sh): scaffold validation helper
+This repository is for OpenClaw deployment, troubleshooting, and system migration.
+It is not an application source repository.
 
-Keep new operational docs at repo root only if they are primary entry points; otherwise place them under `skills/`, `config/`, or `scripts/`.
+Primary docs:
 
-## Build, Test, and Development Commands
+1. `README.md`
+2. `codex_handsoff.md`
+3. `skills/openclaw-plugin-channel-recovery/SKILL.md`
 
-- `bash scripts/bootstrap_openclaw.sh`: validates the local scaffold and expected files
-- `git diff --stat`: quick review before committing doc or config updates
-- `rg "<pattern>" codex_handsoff.md skills/ README.md`: verify wording and avoid duplicated guidance
+## 2. Execution Order (Mandatory)
 
-There is no application build pipeline in this repo. Changes are mainly documentation, templates, and shell automation.
+For any operational task:
 
-## Coding Style & Naming Conventions
+1. Read current docs.
+2. Inspect real remote runtime (`openclaw status --deep`, key config fields).
+3. Do read-only diagnosis first.
+4. Propose minimal change.
+5. Back up before edits.
+6. Apply changes.
+7. Restart/reload if needed.
+8. Validate with real inbound message flow.
+9. Write back lessons to docs.
 
-- Use Markdown for operational docs and keep sections short, explicit, and action-oriented.
-- Use 2-space indentation in JSON examples and shell snippets that appear in docs.
-- Prefer lowercase, hyphenated filenames for new docs and skills.
-- Keep examples production-specific: use real paths such as `/home/admin/.openclaw/...` when documenting the deployed system.
+Do not skip steps 2, 5, or 8.
 
-## Testing Guidelines
+## 3. Safety Rules
 
-- Run `bash scripts/bootstrap_openclaw.sh` after structural changes.
-- For documentation updates, verify commands and paths against current files.
-- Do not add speculative steps; every recovery step should be traceable to a real incident or confirmed workflow.
+- Default: **do not push to `origin`** unless user explicitly asks.
+- Before destructive cleanup, create a local `tar` backup.
+- Never rely only on config presence; verify runtime behavior.
+- Do not run `openclaw doctor --fix` automatically.
+- Do not keep stale templates or scaffold files that can mislead operators.
 
-## Commit & Pull Request Guidelines
+## 4. Human Collaboration Rules
 
-Recent history favors short imperative commits, for example:
+Assume human partners may be non-technical.
 
-- `Document Feishu duplicate-account recovery`
-- `Consolidate OpenClaw handoff and recovery docs`
-- `chore: bootstrap MySiBuddy scaffold`
+- Ask for one action at a time.
+- Provide copy-paste commands only.
+- State expected success output.
+- Ask only for required artifacts (`appId`, `appSecret`, `botToken`, specific command output).
+- Do not ask humans to hand-edit complex JSON unless unavoidable.
 
-PRs should include:
+## 5. OpenClaw-Specific Hard Rules
 
-- what changed
-- why the change is needed
-- which file is now authoritative
-- any operational risk or migration impact
+- Keep routing in top-level `bindings`, not prompt text.
+- New agent directories must contain:
+  - `auth-profiles.json`
+  - `models.json`
+- In multi-account Feishu mode:
+  - do not keep top-level `channels.feishu.appId` / `appSecret`
+  - do not keep `channels.feishu.accounts.default` unless truly needed
+- Plugin policy must explicitly preserve required stock plugins.
 
-## Security & Configuration Tips
+## 6. Definition of Done
 
-- Never commit real tokens, secrets, or private runtime dumps.
-- Treat `openclaw.example.json` as a schema hint only.
-- When documenting fixes, capture both the failure signature and the minimal proven repair.
+A task is complete only when all are true:
+
+1. `openclaw status --deep` healthy.
+2. Target channels/accounts are `ON/OK`.
+3. Direct agent invocation succeeds with intended model/provider.
+4. Real inbound messages route to intended session keys.
+5. Documentation reflects the new verified behavior.

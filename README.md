@@ -10,15 +10,15 @@
 ## Project Structure
 
 - `codex_handsoff.md`: single handoff document for rebuilding the current production system in a new environment
-- `config/openclaw/`: OpenClaw config templates
 - `skills/`: reusable Codex skills for deployment, tuning, and recovery
-- `scripts/`: bootstrap and validation scripts
+- `AGENTS.md`: repository-level operating rules for Codex execution and human collaboration
 
 ## Recommended Entry Points
 
 - Start with [`codex_handsoff.md`](codex_handsoff.md) when asking Codex to rebuild or migrate the current system onto a fresh host.
+- Read [`AGENTS.md`](AGENTS.md) when you want Codex to follow the repo-specific operating rules for deployment, migration, backup, and human-assisted troubleshooting.
 - Use [`skills/openclaw-plugin-channel-recovery/SKILL.md`](skills/openclaw-plugin-channel-recovery/SKILL.md) when asking Codex to deploy, harden, tune, or troubleshoot OpenClaw.
-- Use [`config/openclaw/openclaw.example.json`](config/openclaw/openclaw.example.json) only as a template artifact, not as the full production truth.
+- Do not use legacy scaffold placeholders as production source of truth; rely on handoff + skill + remote runtime verification.
 - Both the handoff and the skill now include the Feishu multi-account duplicate-app pitfall: do not keep the same old Feishu app both at top-level `channels.feishu.*` and under `channels.feishu.accounts.work`, and do not keep `channels.feishu.accounts.default` in multi-account mode unless it is a real separate app.
 - Both the handoff and the skill now also document the Gemini multi-key auth design: multiple Gemini API keys are implemented as ordered `google` auth profiles such as `google:primary`, `google:secondary`, and `google:tertiary`, with provider-level failover before model fallback.
 
@@ -30,6 +30,7 @@ This repository is initialized with `main` and `dev` branches.
 
 - [`codex_handsoff.md`](codex_handsoff.md): authoritative deployment handoff for reproducing the full current OpenClaw topology, routing, auth artifacts, bot bindings, and validation flow on a new environment
   Includes the Gemini multi-key design, `auth.order.google` pattern, secret injection flow, and verification rules.
+- [`AGENTS.md`](AGENTS.md): repository-level operating rules for Codex, including change order, backup discipline, human handoff style, and completion criteria.
 
 ## Reusable Skills
 
