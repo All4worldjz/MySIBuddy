@@ -36,6 +36,9 @@ Do not skip steps 2, 5, or 8.
 - Never rely only on config presence; verify runtime behavior.
 - Do not run `openclaw doctor --fix` automatically.
 - Do not keep stale templates or scaffold files that can mislead operators.
+- Do not use UI-driven or agent-driven full `config.apply` as a production publish path.
+- For production config changes, use `scripts/safe_openclaw_validate.sh` and `scripts/safe_openclaw_apply.sh`.
+- Treat `Config overwrite`, `Config write anomaly`, `Config observe anomaly`, `Unknown channel`, `Outbound not configured`, and `openclaw.json.clobbered.*` as rollback-first signals.
 
 ## 4. Human Collaboration Rules
 
@@ -57,6 +60,7 @@ Assume human partners may be non-technical.
   - do not keep top-level `channels.feishu.appId` / `appSecret`
   - do not keep `channels.feishu.accounts.default` unless truly needed
 - Plugin policy must explicitly preserve required stock plugins.
+- Never overwrite production `openclaw.json` with an incomplete object; candidate configs must preserve the full current topology unless the user explicitly wants topology change.
 
 ## 6. Definition of Done
 

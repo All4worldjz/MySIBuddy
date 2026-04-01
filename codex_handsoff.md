@@ -34,6 +34,65 @@ This warning is currently accepted to keep stock `feishu` suppressed while `open
 3. Keep account-to-agent routing in top-level `bindings`, not prompt text.
 4. New agent directories must include `auth-profiles.json` and `models.json`.
 5. Do not run `openclaw doctor --fix` blindly.
+6. Do not publish production config by hand; use the guardrail scripts in `scripts/`.
+
+## 2.1 Guardrail Script Flow
+
+These scripts are the only approved production config path:
+
+```bash
+scripts/safe_openclaw_validate.sh /tmp/openclaw.candidate.json
+scripts/safe_openclaw_apply.sh /tmp/openclaw.candidate.json
+```
+
+Supporting commands:
+
+```bash
+scripts/safe_openclaw_smoke.sh
+scripts/safe_openclaw_rollback.sh /home/admin/.openclaw/openclaw.json.pre-apply-YYYYmmdd-HHMMSS
+```
+
+Execution contract:
+
+1. `safe_openclaw_validate.sh` checks JSON syntax plus current production topology.
+2. `safe_openclaw_apply.sh` creates a timestamped backup, copies the candidate into place, restarts `openclaw-gateway`, runs smoke checks, and auto-rolls back on failure.
+3. `safe_openclaw_smoke.sh` verifies `Telegram ON/OK`, `Feishu ON/OK`, `Agents = 7`, and absence of fatal drift signals in recent logs.
+4. `safe_openclaw_rollback.sh` restores an explicit or latest backup and re-runs smoke validation.
+
+Do not bypass this flow with UI-driven `config.apply`, ad hoc JSON edits, or `openclaw doctor --fix`.
+
+## 2.2 2026-04-01 Config Clobber Incident
+
+This failure has already happened in production and must be treated as a known trap.
+
+Observed sequence:
+
+1. `gateway-client` attempted `config.patch` with a non-object payload.
+2. Another attempt injected invalid keys into `agents.list.7`, including `***` and `description`.
+3. A later `config.apply` succeeded, but it overwrote `openclaw.json` with an incomplete object.
+4. Production drifted to:
+   - `channels = []`
+   - `bindings = 0`
+   - `plugins.allow = null`
+   - `plugins.deny = null`
+   - unexpected extra agent `slideforge`
+5. Runtime symptoms became:
+   - `Unknown channel: telegram`
+   - `Outbound not configured for channel: telegram`
+   - all bots stopped replying even though the gateway process was still running
+
+Verified recovery path:
+
+```bash
+cp /home/admin/.openclaw/openclaw.json.pre-balanced-rotation-20260401-013832 /home/admin/.openclaw/openclaw.json
+systemctl --user restart openclaw-gateway
+openclaw status --deep
+```
+
+Operational rule:
+
+- If this signal chain appears again, stop all further mutation attempts and roll back first.
+- Do not keep debugging on top of a clobbered config.
 
 ## 3. LLM API Setup (Critical)
 
@@ -229,6 +288,14 @@ And always keep global files synchronized:
 
 - `/home/admin/.openclaw/openclaw.json`
 - `/home/admin/.openclaw/runtime-secrets.json`
+
+Guardrail scripts should also be migrated:
+
+- `/home/admin/.openclaw/scripts/lib_openclaw_guardrails.sh`
+- `/home/admin/.openclaw/scripts/safe_openclaw_validate.sh`
+- `/home/admin/.openclaw/scripts/safe_openclaw_apply.sh`
+- `/home/admin/.openclaw/scripts/safe_openclaw_smoke.sh`
+- `/home/admin/.openclaw/scripts/safe_openclaw_rollback.sh`
 
 If agent IDs or account IDs change, update `bindings` immediately.
 

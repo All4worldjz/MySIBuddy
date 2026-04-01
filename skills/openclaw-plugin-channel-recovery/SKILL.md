@@ -12,6 +12,60 @@ Use this skill for either of these situations:
 
 This skill is not just for plugin outages. It is the full OpenClaw deployment, hardening, routing, and recovery runbook for this repo.
 
+## Mandatory Config Guardrails
+
+For any production config edit, use the repository scripts instead of raw file replacement or UI-driven `config.apply`:
+
+```bash
+scripts/safe_openclaw_validate.sh /tmp/openclaw.candidate.json
+scripts/safe_openclaw_apply.sh /tmp/openclaw.candidate.json
+```
+
+Support paths:
+
+```bash
+scripts/safe_openclaw_smoke.sh
+scripts/safe_openclaw_rollback.sh /home/admin/.openclaw/openclaw.json.pre-apply-YYYYmmdd-HHMMSS
+```
+
+What they enforce:
+
+1. exact 7-agent topology
+2. exact Telegram accounts `chief/personal/mentor`
+3. exact Feishu accounts `work/scribe`
+4. `plugins.allow = ["openclaw-lark", "telegram"]`
+5. `plugins.deny = ["feishu"]`
+6. no top-level `channels.feishu.appId/appSecret`
+7. no `channels.feishu.accounts.default`
+8. no empty `channels` or `bindings`
+9. no patch/Markdown residue in the candidate config
+
+## Config Clobber Failure Mode
+
+This exact production failure has already happened.
+
+Failure chain:
+
+1. `config.patch raw must be an object`
+2. `invalid config: agents.list.7: Unrecognized key: "***"`
+3. `invalid config: ... Unrecognized key: "description"`
+4. later `config.apply` succeeds anyway and overwrites `openclaw.json`
+5. `channels` disappear, `bindings` disappear, `plugins.allow` becomes empty, and an unexpected agent can appear
+6. runtime then degrades to:
+   - `Unknown channel: telegram`
+   - `Outbound not configured for channel: telegram`
+   - all bots appear dead while the gateway process remains `active`
+
+Required response:
+
+1. stop further config mutation
+2. back up the broken config
+3. restore the latest known-good `openclaw.json.pre-*`
+4. restart gateway
+5. run `safe_openclaw_validate.sh` and `safe_openclaw_smoke.sh`
+
+Do not debug on top of a clobbered config unless rollback is impossible.
+
 ## Core Rule
 
 Do not treat OpenClaw setup as done because the gateway starts.
@@ -127,6 +181,7 @@ Known working pattern:
 ```
 
 If a channel is configured, credentials are valid, but the channel is missing from `openclaw status --deep`, check plugin policy before chasing token or transport issues.
+If `channels` or `bindings` are empty, treat it as config clobber first, not as a token problem.
 
 ## Bindings
 
