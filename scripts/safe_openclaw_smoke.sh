@@ -15,9 +15,9 @@ ACTIVE_SINCE="$(systemctl --user show -p ActiveEnterTimestamp --value "$OPENCLAW
 [[ -n "$ACTIVE_SINCE" ]] || die "failed to read service start time"
 journalctl --user -u "$OPENCLAW_SERVICE" --since "$ACTIVE_SINCE" --no-pager >"$LOG_FILE"
 
-grep -q 'Telegram │ ON      │ OK' "$STATUS_FILE" || die "telegram is not ON/OK"
-grep -q 'Feishu   │ ON      │ OK' "$STATUS_FILE" || die "feishu is not ON/OK"
-grep -q 'Agents               │ 7 ' "$STATUS_FILE" || die "agent count is not 7"
+grep -Eq 'Telegram[[:space:]]+│[[:space:]]+ON[[:space:]]+│[[:space:]]+OK' "$STATUS_FILE" || die "telegram is not ON/OK"
+grep -Eq 'Feishu[[:space:]]+│[[:space:]]+ON[[:space:]]+│[[:space:]]+OK' "$STATUS_FILE" || die "feishu is not ON/OK"
+grep -Eq 'Agents[[:space:]]+│[[:space:]]+7[[:space:]]' "$STATUS_FILE" || die "agent count is not 7"
 
 for needle in \
   'Unknown channel' \

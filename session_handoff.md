@@ -17,6 +17,7 @@ Verified on remote host `admin@47.82.234.46` after system upgrade and optimizati
 - `openclaw-gateway` running (Version: **2026.3.31**)
 - `Telegram` is `ON / OK` (3/3 accounts)
 - `Feishu` is `ON / OK` (2/2 accounts)
+- `openclaw-weixin` is `ON / OK` (1/1 accounts)
 - Agents (7 total) are healthy.
 - **Optimization applied**:
   - `session.threadBindings.idleHours = 8`
@@ -56,6 +57,15 @@ Verify search:
 
 ```bash
 ssh -o BatchMode=yes admin@47.82.234.46 'openclaw agent --agent venture-hub --message "test search"'
+```
+
+## Read this first next time
+
+1. `AGENTS.md`
+2. `codex_handsoff.md`
+3. `skills/openclaw-plugin-channel-recovery/SKILL.md`
+4. `session_handoff.md`
+4.46 'openclaw agent --agent venture-hub --message "test search"'
 ```
 
 ## Read this first next time

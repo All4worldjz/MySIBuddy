@@ -6,7 +6,7 @@ This is the authoritative runbook for rebuilding and migrating the MySiBuddy Ope
 
 Verified from remote host `admin@47.82.234.46`:
 
-- OpenClaw `2026.3.31`, system Node `24.13.0`
+- OpenClaw `2026.4.1`, system Node `24.13.0`
 - Agents: `chief-of-staff`, `work-hub`, `venture-hub`, `life-hub`, `product-studio`, `zh-scribe`, `tech-mentor`
 - Channels: Telegram `3/3` (`chief`, `personal`, `mentor`), Feishu `2/2` (`work`, `scribe`)
 - Plugin policy:
