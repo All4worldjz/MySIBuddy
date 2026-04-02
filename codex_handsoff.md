@@ -2,26 +2,20 @@
 
 This is the authoritative runbook for rebuilding and migrating the MySiBuddy OpenClaw system.
 
-## 1. Production Reality (Verified 2026-04-02)
+## 1. Production Reality (Verified 2026-04-03)
 
 Verified from remote host `admin@47.82.234.46`:
 
-- OpenClaw `2026.4.1`, system Node `24.13.0`
-- Agents: `chief-of-staff`, `work-hub`, `venture-hub`, `life-hub`, `product-studio`, `zh-scribe`, `tech-mentor`
-- Channels: Telegram `3/3` (`chief`, `personal`, `mentor`), Feishu `2/2` (`work`, `scribe`)
+- OpenClaw `2026.4.2`, system Node `24.13.0`
+- Agents: `chief-of-staff` (Admin/Search), 6 Hub Agents (Sandboxed)
+- Channels: Telegram `3/3`, Feishu `2/2`, Weixin `1/1`
+- Security Architecture:
+  - `chief-of-staff`: `sandbox.mode = off`
+  - `hubs`: `sandbox.mode = all`, `tools.fs.workspaceOnly = true`
 - Plugin policy:
-  - `plugins.allow = ["openclaw-lark", "telegram", "duckduckgo"]`
-  - `plugins.deny = ["feishu"]`
-- Performance Parameters:
-  - `session.threadBindings.idleHours = 8`
-  - `agents.defaults.subagents.archiveAfterMinutes = 60`
-  - `venture-hub.sandbox.mode = "all"`
-- Tools:
-  - `tools.profile = "full"`
-  - `tools.sessions.visibility = "all"`
-  - `tools.agentToAgent.enabled = true`
-  - `tools.agentToAgent.allow` contains all 7 agents
-- Bindings count: `7`
+  - `plugins.allow = ["openclaw-lark", "telegram", "duckduckgo", "openclaw-weixin", "minimax", "unified-search"]`
+- Performance: `idleHours = 8`, `archiveAfterMinutes = 60`
+- Unified Search: Microservice on port `18790`, bridged via `curl`.
 
 Do not drift from this shape unless explicitly requested.
 

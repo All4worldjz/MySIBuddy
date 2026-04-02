@@ -58,7 +58,7 @@ expected_agents = [
 ]
 expected_telegram = ["chief", "personal", "mentor"]
 expected_feishu = ["work", "scribe"]
-expected_allow = ["openclaw-lark", "telegram", "duckduckgo", "openclaw-weixin"]
+expected_allow = ['openclaw-lark', 'telegram', 'duckduckgo', 'openclaw-weixin', 'minimax', 'unified-search']
 expected_deny = ["feishu"]
 
 agents = [a.get("id") for a in d.get("agents", {}).get("list", [])]

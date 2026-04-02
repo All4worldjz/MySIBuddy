@@ -51,10 +51,13 @@ ssh -o BatchMode=yes admin@47.82.234.46 'openclaw status --deep'
 
 ### 4. Administrative Privilege (Least Privilege)
 - **Restricted Access**: System health checks (`sys_status`), log audits (`sys_recent_logs`), and smoke tests (`sys_smoke_test`) are strictly reserved for the **`chief-of-staff`** agent.
-- **Implementation**: These tools are encapsulated in the `system-admin` skill and must NOT be authorized for any other agent.
-- **Goal**: Minimize the attack surface by ensuring that domain-specific agents (Hubs) cannot access system-wide metadata.
 
-### 5. Mandatory Documentation
+### 5. Intelligence Delegation Protocol
+- **Search Control**: All `unified_search` and `web_fetch` operations are centralized in the `chief-of-staff`.
+- **Worker Logic**: Hub agents (Work, Venture, etc.) are sandboxed and must delegate information gathering to the Chief via `subagents`.
+- **Data Flow**: Chief acts as a data cleaner, summarizing external content before passing it back to isolated workers to prevent injection attacks.
+
+### 6. Mandatory Documentation
 - **`codex_handsoff.md`**: The authoritative source of truth for rebuilding the system.
 - **`AGENTS.md`**: Strict operating rules for AI agents (Codex/Gemini) working in this repo.
 - **`session_handoff.md`**: Chronological log of production changes and current status.
