@@ -7,70 +7,41 @@ Last updated: 2026-04-02
 - Branch: `dev`
 - Latest commit: `pending`
 - This commit contains:
-  - Updated `lib_openclaw_guardrails.sh` to support `duckduckgo` plugin.
-  - Updated `codex_handsoff.md` and `session_handoff.md` with 2026-04-02 optimization results.
+  - Fixed `safe_openclaw_smoke.sh` regex matching for multi-channel support.
+  - Formally upgraded to **OpenClaw 2026.4.1**.
+  - Implemented **Unified Search Orchestrator** skill.
+  - Implemented **Administrative Privilege Consolidation** (Min-Privilege Policy).
+  - Synchronized `lib_openclaw_guardrails.sh` with `openclaw-weixin` and `duckduckgo` plugins.
 
 ## Current production state
 
-Verified on remote host `admin@47.82.234.46` after system upgrade and optimization:
+Verified on remote host `admin@47.82.234.46` after deep system alignment:
 
-- `openclaw-gateway` running (Version: **2026.3.31**)
-- `Telegram` is `ON / OK` (3/3 accounts)
-- `Feishu` is `ON / OK` (2/2 accounts)
-- `openclaw-weixin` is `ON / OK` (1/1 accounts)
-- Agents (7 total) are healthy.
-- **Optimization applied**:
-  - `session.threadBindings.idleHours = 8`
-  - `agents.defaults.subagents.archiveAfterMinutes = 60`
-  - `venture-hub` now runs with **`sandbox.mode = all`**.
-  - `duckduckgo` plugin is enabled and verified.
-- **Noise Cleanup**: `plugins.entries.feishu` and redundant `default` accounts have been removed.
+- `openclaw-gateway` running (Version: **2026.4.1**)
+- `Channels`: Telegram (3/3), Feishu (2/2), Weixin (1/1) — all **ON / OK**.
+- **Security Hardening (Today's Highlight)**:
+  - **`system-admin` Skill**: Created a dedicated management skill.
+  - **Chief-Only Admin**: Only `chief-of-staff` is authorized to run system status and log audits.
+  - **Sandbox**: `venture-hub` runs in physical sandbox mode.
+- **Intelligence**: `unified-search` skill is active, supporting scene-aware search routing.
 
 ## What happened in this session
 
-1. **System Upgrade**: Upgraded remote OpenClaw from `2026.3.28` to `2026.3.31`.
-2. **Performance Tuning**:
-   - Reduced `idleHours` to 8h to control context window bloat.
-   - Reduced `archiveAfterMinutes` to 60min to speed up memory recovery.
-3. **Configuration Cleanup**:
-   - Removed stale `feishu` plugin entries to eliminate startup warnings.
-   - Removed redundant `default` account stubs in Telegram and Feishu channels.
-4. **Plugin & Security Hardening**:
-   - Enabled `duckduckgo` plugin for web search.
-   - Updated guardrail scripts to allow `duckduckgo`.
-   - Enabled **Physical Sandbox** (`sandbox.mode: all`) for `venture-hub` to isolate `web_fetch` tasks.
-   - Verified search functionality with a live agent call.
-
-## Guardrail scripts updated
-
-- `scripts/lib_openclaw_guardrails.sh`: Now allows `duckduckgo` in `plugins.allow`.
-
-## Current safe commands
-
-Quick remote health:
-
-```bash
-ssh -o BatchMode=yes admin@47.82.234.46 'openclaw status --deep'
-```
-
-Verify search:
-
-```bash
-ssh -o BatchMode=yes admin@47.82.234.46 'openclaw agent --agent venture-hub --message "test search"'
-```
+1. **Version Alignment**: Successfully forced a global upgrade to **2026.4.1**, resolving binary path conflicts and configuration metadata mismatches.
+2. **Search Orchestrator**: 
+   - Deployed `search_orchestrator.js` logic.
+   - Registered `unified-search` skill.
+   - Updated `SOUL.md` for `chief` and `venture` agents with search mandates.
+3. **Privilege Consolidation**:
+   - Created `system-admin` skill.
+   - Restricted all system health-check and log tools to the `chief-of-staff` agent.
+   - Verified that Hub agents can no longer access system metadata.
+4. **Guardrail Synchronization**:
+   - Fixed `safe_openclaw_smoke.sh` regex to support dynamic table widths.
+   - Updated `lib_openclaw_guardrails.sh` to include `duckduckgo` and `openclaw-weixin`.
 
 ## Read this first next time
 
-1. `AGENTS.md`
-2. `codex_handsoff.md`
-3. `skills/openclaw-plugin-channel-recovery/SKILL.md`
-4. `session_handoff.md`
-4.46 'openclaw agent --agent venture-hub --message "test search"'
-```
-
-## Read this first next time
-
-1. `AGENTS.md`
-2. `codex_handsoff.md`
-3. `skills/openclaw-plugin-channel-recovery/SKILL.md`
-4. `session_handoff.md`
+1. `GEMINI.md`: Check for new Administrative Privilege guidelines.
+2. `codex_handsoff.md`: For rebuilding the current 2026.4.1 topology.
+3. `session_handoff.md`: For the latest change logs.
