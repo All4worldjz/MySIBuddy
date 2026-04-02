@@ -2,16 +2,20 @@
 
 This is the authoritative runbook for rebuilding and migrating the MySiBuddy OpenClaw system.
 
-## 1. Production Reality (Verified 2026-03-31)
+## 1. Production Reality (Verified 2026-04-02)
 
 Verified from remote host `admin@47.82.234.46`:
 
-- OpenClaw `2026.3.28`, system Node `24.13.0`
+- OpenClaw `2026.3.31`, system Node `24.13.0`
 - Agents: `chief-of-staff`, `work-hub`, `venture-hub`, `life-hub`, `product-studio`, `zh-scribe`, `tech-mentor`
 - Channels: Telegram `3/3` (`chief`, `personal`, `mentor`), Feishu `2/2` (`work`, `scribe`)
 - Plugin policy:
-  - `plugins.allow = ["openclaw-lark", "telegram"]`
+  - `plugins.allow = ["openclaw-lark", "telegram", "duckduckgo"]`
   - `plugins.deny = ["feishu"]`
+- Performance Parameters:
+  - `session.threadBindings.idleHours = 8`
+  - `agents.defaults.subagents.archiveAfterMinutes = 60`
+  - `venture-hub.sandbox.mode = "all"`
 - Tools:
   - `tools.profile = "full"`
   - `tools.sessions.visibility = "all"`
@@ -21,11 +25,9 @@ Verified from remote host `admin@47.82.234.46`:
 
 Do not drift from this shape unless explicitly requested.
 
-Known non-blocking warning in production:
-
-- `plugins.entries.feishu: plugin disabled (blocked by denylist) but config is present`
-
-This warning is currently accepted to keep stock `feishu` suppressed while `openclaw-lark` owns Feishu traffic.
+Noise Cleanup:
+- Stale `plugins.entries.feishu` removed.
+- Redundant `default` accounts removed.
 
 ## 2. Non-Negotiable Rules
 

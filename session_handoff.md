@@ -1,70 +1,48 @@
 # Session Handoff
 
-Last updated: 2026-04-01
+Last updated: 2026-04-02
 
 ## Current repo state
 
 - Branch: `dev`
-- Latest commit: `55ffe13`
+- Latest commit: `pending`
 - This commit contains:
-  - OpenClaw config guardrail scripts under `scripts/`
-  - doc updates for config clobber recovery and safe publish flow
+  - Updated `lib_openclaw_guardrails.sh` to support `duckduckgo` plugin.
+  - Updated `codex_handsoff.md` and `session_handoff.md` with 2026-04-02 optimization results.
 
 ## Current production state
 
-Verified on remote host `admin@47.82.234.46` after rollback and guardrail deployment:
+Verified on remote host `admin@47.82.234.46` after system upgrade and optimization:
 
-- `openclaw-gateway` running
-- `Telegram` is `ON / OK`
-- `Feishu` is `ON / OK`
-- Agents are back to the expected 7:
-  - `chief-of-staff`
-  - `work-hub`
-  - `venture-hub`
-  - `life-hub`
-  - `product-studio`
-  - `zh-scribe`
-  - `tech-mentor`
-- Known accepted warning remains:
-  - `plugins.entries.feishu: plugin disabled (blocked by denylist) but config is present`
+- `openclaw-gateway` running (Version: **2026.3.31**)
+- `Telegram` is `ON / OK` (3/3 accounts)
+- `Feishu` is `ON / OK` (2/2 accounts)
+- Agents (7 total) are healthy.
+- **Optimization applied**:
+  - `session.threadBindings.idleHours = 8`
+  - `agents.defaults.subagents.archiveAfterMinutes = 60`
+  - `venture-hub` now runs with **`sandbox.mode = all`**.
+  - `duckduckgo` plugin is enabled and verified.
+- **Noise Cleanup**: `plugins.entries.feishu` and redundant `default` accounts have been removed.
 
 ## What happened in this session
 
-1. A production outage was diagnosed.
-2. Root cause was a bad `config.apply` / config overwrite via `gateway-client`.
-3. Broken runtime symptoms included:
-   - `channels = []`
-   - `bindings = 0`
-   - `plugins.allow = null`
-   - unexpected extra agent `slideforge`
-   - `Unknown channel: telegram`
-   - `Outbound not configured for channel: telegram`
-4. Production was restored by rolling back `openclaw.json` to:
-   - `/home/admin/.openclaw/openclaw.json.pre-balanced-rotation-20260401-013832`
-5. System-wide agent guardrail text was appended to all 7 workspaces' `AGENTS.md` and `SOUL.md`.
-6. New guardrail scripts were created locally and deployed remotely to:
-   - `/home/admin/.openclaw/scripts/`
+1. **System Upgrade**: Upgraded remote OpenClaw from `2026.3.28` to `2026.3.31`.
+2. **Performance Tuning**:
+   - Reduced `idleHours` to 8h to control context window bloat.
+   - Reduced `archiveAfterMinutes` to 60min to speed up memory recovery.
+3. **Configuration Cleanup**:
+   - Removed stale `feishu` plugin entries to eliminate startup warnings.
+   - Removed redundant `default` account stubs in Telegram and Feishu channels.
+4. **Plugin & Security Hardening**:
+   - Enabled `duckduckgo` plugin for web search.
+   - Updated guardrail scripts to allow `duckduckgo`.
+   - Enabled **Physical Sandbox** (`sandbox.mode: all`) for `venture-hub` to isolate `web_fetch` tasks.
+   - Verified search functionality with a live agent call.
 
-## Guardrail scripts now available
+## Guardrail scripts updated
 
-Repo:
-
-- `scripts/safe_openclaw_validate.sh`
-- `scripts/safe_openclaw_apply.sh`
-- `scripts/safe_openclaw_smoke.sh`
-- `scripts/safe_openclaw_rollback.sh`
-- `scripts/lib_openclaw_guardrails.sh`
-
-Remote:
-
-- `/home/admin/.openclaw/scripts/safe_openclaw_validate.sh`
-- `/home/admin/.openclaw/scripts/safe_openclaw_apply.sh`
-- `/home/admin/.openclaw/scripts/safe_openclaw_smoke.sh`
-- `/home/admin/.openclaw/scripts/safe_openclaw_rollback.sh`
-
-Remote backup created before script deployment:
-
-- `/home/admin/.openclaw/scripts.pre-guardrail-20260401-211757.tgz`
+- `scripts/lib_openclaw_guardrails.sh`: Now allows `duckduckgo` in `plugins.allow`.
 
 ## Current safe commands
 
@@ -74,10 +52,10 @@ Quick remote health:
 ssh -o BatchMode=yes admin@47.82.234.46 'openclaw status --deep'
 ```
 
-Guardrail validation + smoke:
+Verify search:
 
 ```bash
-ssh -o BatchMode=yes admin@47.82.234.46 '/home/admin/.openclaw/scripts/safe_openclaw_validate.sh /home/admin/.openclaw/openclaw.json && /home/admin/.openclaw/scripts/safe_openclaw_smoke.sh'
+ssh -o BatchMode=yes admin@47.82.234.46 'openclaw agent --agent venture-hub --message "test search"'
 ```
 
 ## Read this first next time
@@ -86,9 +64,3 @@ ssh -o BatchMode=yes admin@47.82.234.46 '/home/admin/.openclaw/scripts/safe_open
 2. `codex_handsoff.md`
 3. `skills/openclaw-plugin-channel-recovery/SKILL.md`
 4. `session_handoff.md`
-
-## Likely next useful tasks
-
-- Add a single wrapper command such as `safe_openclaw_release.sh`
-- Decide whether to commit another session update after future operational changes
-- Keep documenting any future OpenClaw failure mode before memory fades
