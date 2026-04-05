@@ -12,8 +12,9 @@ EXPECTED_AGENTS=(
   "product-studio"
   "zh-scribe"
   "tech-mentor"
+  "devcopilot-hub"
 )
-EXPECTED_TELEGRAM_ACCOUNTS=("chief" "personal" "mentor")
+EXPECTED_TELEGRAM_ACCOUNTS=("chief" "personal" "mentor" "dev")
 EXPECTED_FEISHU_ACCOUNTS=("work" "scribe")
 EXPECTED_PLUGIN_ALLOW=("openclaw-lark" "telegram")
 EXPECTED_PLUGIN_DENY=("feishu")
@@ -55,8 +56,9 @@ expected_agents = [
     "product-studio",
     "zh-scribe",
     "tech-mentor",
+    "devcopilot-hub",
 ]
-expected_telegram = ["chief", "personal", "mentor"]
+expected_telegram = ["chief", "personal", "mentor", "dev"]
 expected_feishu = ["work", "scribe"]
 expected_allow = ['openclaw-lark', 'telegram', 'duckduckgo', 'openclaw-weixin', 'minimax', 'unified-search']
 expected_deny = ["feishu"]
@@ -89,7 +91,7 @@ if "default" in feishu.get("accounts", {}):
     errors.append("channels.feishu.accounts.default must not exist")
 
 bindings = d.get("bindings", [])
-if len(bindings) != 7:
+if len(bindings) != 8:
     errors.append(f"bindings count mismatch: {len(bindings)}")
 
 tools = d.get("tools", {})
@@ -114,7 +116,7 @@ if not chief:
     errors.append("chief-of-staff missing")
 else:
     allowed = chief.get("subagents", {}).get("allowAgents", [])
-    required = ["work-hub", "venture-hub", "life-hub", "product-studio", "zh-scribe", "tech-mentor"]
+    required = ["work-hub", "venture-hub", "life-hub", "product-studio", "zh-scribe", "tech-mentor", "devcopilot-hub"]
     missing = [x for x in required if x not in allowed]
     if missing:
         errors.append(f"chief-of-staff.subagents.allowAgents missing: {missing}")

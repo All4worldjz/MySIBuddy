@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ssh *)",
+      "Bash(do *)",
+      "Bash(break)",
+      "Bash(sleep *)",
+      "Bash(done)",
+      "WebSearch",
+      "WebFetch(github.com)",
+      "WebFetch(docs.openclaw.ai)",
+      "Bash(git config *)",
+      "Bash(ls *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  },
+  "$version": 3
+}
