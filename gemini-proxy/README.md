@@ -1,184 +1,313 @@
 # Gemini Proxy
 
-OpenAI-compatible proxy for Google Gemini via OAuth authentication. 运行在 OpenClaw 服务器上，通过 Google 账号的 OAuth 认证访问 Gemini 模型。
+OpenAI 兼容的 Gemini API 代理服务，使用 Gemini CLI 的 OAuth 认证，支持 Gemini 3.x 系列模型。
 
-## 工作原理
+## 项目背景
 
+### 问题
+OpenClaw 需要使用 Gemini 3.1 系列模型，但直接使用 `generativelanguage.googleapis.com` API 需要：
+- AI Studio API Key（用户没有）
+- 或 Vertex AI 服务账号（需要额外配置）
+- 或 OAuth token with `generative-language` scope（Gemini CLI 的 OAuth token 没有这个 scope）
+
+### 解决方案
+Gemini CLI 内部使用 **Code Assist API** (`cloudcode-pa.googleapis.com/v1internal`)，该 API：
+- 支持 Gemini CLI 的 OAuth 认证（只需要 `cloud-platform` scope）
+- 支持所有 Gemini 模型，包括 3.x 系列
+- 使用 Gemini 免费订阅额度（Google One AI Pro / Gemini Code Assist standard-tier）
+
+### 架构
 ```
-OpenClaw (OpenAI 格式) → Gemini Proxy (本地) → Google Code Assist API
-```
-
-## 功能特性
-
-- OpenAI 兼容接口 (`/v1/chat/completions`, `/v1/models`)
-- 使用 Google OAuth 认证（与 Gemini CLI 相同）
-- 支持流式输出 (SSE)
-- 支持 Tool Calling (函数调用)
-- Token 自动刷新
-- 本地文件缓存认证信息
-
-## 准备工作
-
-### 第一步：本地获取 Google OAuth 凭证
-
-1. 在**本地电脑**（非服务器）安装 Gemini CLI：
-```bash
-npm install -g @google/gemini-cli
-```
-
-2. 运行认证：
-```bash
-gemini
-```
-选择 `Login with Google` 并登录你的账号。
-
-3. 找到凭证文件：
-- Mac/Linux: `~/.gemini/oauth_creds.json`
-- Windows: `C:\Users\你的用户名\.gemini\oauth_creds.json`
-
-4. 复制该文件内容，后续步骤需要用到。
-
-### 第二步：创建 GCP 项目（推荐）
-
-虽然凭证可以自动发现项目 ID，但手动创建项目可以获得更好的控制：
-
-1. 访问 [Google Cloud Console](https://console.cloud.google.com/)
-2. 新建项目
-3. 记下 Project ID（非项目名称）
-4. 访问 [Gemini for Google Cloud API](https://console.cloud.google.com/apis/library/codegenassist.googleapis.com) 并启用
-
-## 服务器部署
-
-### 方式一：自动化部署脚本
-
-```bash
-# 在服务器上执行
-curl -fsSL https://raw.githubusercontent.com/your-repo/gemini-proxy/main/deploy.sh | bash
-```
-
-### 方式二：手动部署
-
-```bash
-# 1. 克隆或上传项目到服务器
-git clone <repo-url> /opt/gemini-proxy
-cd /opt/gemini-proxy
-
-# 2. 安装依赖
-npm install
-
-# 3. 配置环境变量
-cp .env.example .env
-nano .env
-
-# 4. 编辑 .env，填入 OAuth 凭证（单行 JSON）
-# GCP_SERVICE_ACCOUNT={"access_token":"...","refresh_token":"...","scope":"...","token_type":"Bearer","id_token":"...","expiry_date":...}
-
-# 5. 设置开机启动（systemd）
-sudo cp gemini-proxy.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable gemini-proxy
-sudo systemctl start gemini-proxy
-
-# 6. 检查状态
-sudo systemctl status gemini-proxy
-```
-
-## 验证
-
-```bash
-# 检查健康状态
-curl http://127.0.0.1:8787/health
-
-# 列出可用模型
-curl http://127.0.0.1:8787/v1/models
-
-# 测试对话（非流式）
-curl -X POST http://127.0.0.1:8787/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "gemini-2.5-flash",
-    "messages": [{"role": "user", "content": "Hello!"}]
-  }'
-
-# 测试流式输出
-curl -X POST http://127.0.0.1:8787/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "gemini-2.5-flash",
-    "messages": [{"role": "user", "content": "Write a haiku"}],
-    "stream": true
-  }'
-```
-
-## OpenClaw 配置
-
-修改 OpenClaw 的 `openclaw.json`：
-
-```json
-{
-  "models": {
-    "mode": "merge",
-    "providers": {
-      "openai": {
-        "baseUrl": "http://127.0.0.1:8787/v1",
-        "apiKey": "sk-your-secret-api-key-here",
-        "api": "openai-completions",
-        "models": [
-          {
-            "id": "gemini-2.5-flash",
-            "name": "Gemini 2.5 Flash",
-            "reasoning": false,
-            "input": ["text"],
-            "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
-            "contextWindow": 1000000,
-            "maxTokens": 65536
-          }
-        ]
-      }
-    }
-  },
-  "agents": {
-    "defaults": {
-      "model": {
-        "primary": "openai/gemini-2.5-flash"
-      }
-    }
-  }
-}
+OpenClaw → gemini-proxy (OpenAI API) → Code Assist API → Gemini Models
+                    ↓
+            OAuth Token (from Gemini CLI)
+                    ↓
+            cloudcode-pa.googleapis.com
 ```
 
 ## 支持的模型
 
-- `gemini-2.5-pro` - 最新的 Pro 模型，支持思考
-- `gemini-2.5-flash` - 快速模型，支持思考
-- `gemini-2.5-flash-lite` - 轻量快速模型
-- `gemini-2.0-flash` - 2.0 快速模型
-- `gemini-1.5-pro` - 1.5 Pro 模型
-- `gemini-1.5-flash` - 1.5 快速模型
+| 模型 ID | 说明 | 状态 |
+|---------|------|------|
+| `gemini-3.1-pro-preview` | Gemini 3.1 Pro (thinking) | ✅ 可用 |
+| `gemini-3.1-flash-lite-preview` | 别名 → gemini-3-flash-preview | ✅ 可用 |
+| `gemini-3-pro-preview` | Gemini 3 Pro (thinking) | ✅ 可用 |
+| `gemini-3-flash-preview` | Gemini 3 Flash | ✅ 可用 |
+| `gemini-2.5-pro` | Gemini 2.5 Pro (thinking) | ✅ 可用 |
+| `gemini-2.5-flash` | Gemini 2.5 Flash (thinking) | ✅ 可用 |
+| `gemini-2.5-flash-lite` | Gemini 2.5 Flash Lite | ✅ 可用 |
+| `gemini-2.0-flash` | Gemini 2.0 Flash | ✅ 可用 |
+| `gemini-1.5-pro` | Gemini 1.5 Pro | ✅ 可用 |
+| `gemini-1.5-flash` | Gemini 1.5 Flash | ✅ 可用 |
 
-## 故障排查
+## 安装部署
 
-### 401 Authentication Error
-凭证无效或已过期。需要重新运行 `gemini auth` 获取新凭证。
+### 前置条件
+1. 服务器已安装 Node.js 18+
+2. 已安装 Gemini CLI 并完成 OAuth 认证
 
-### Token 刷新失败
-`refresh_token` 被撤销。重新运行 `gemini auth` 获取新的完整凭证。
+### 步骤
 
-### 连接被拒绝
-服务未启动或端口被占用：
 ```bash
-systemctl status gemini-proxy
-journalctl -u gemini-proxy -f
+# 1. 安装依赖
+npm install
+
+# 2. 确保 OAuth 凭证存在
+ls ~/.gemini/oauth_creds.json
+
+# 3. 启动服务
+node src/index.js
+
+# 或使用 PM2 守护进程
+pm2 start src/index.js --name gemini-proxy
 ```
 
-### 模型不支持
-确保使用正确的模型 ID，可通过 `GET /v1/models` 查看可用模型。
+### 环境变量
 
-## 安全建议
+创建 `.env` 文件（可选）：
 
-1. 设置 `OPENAI_API_KEY` 防止未授权访问
-2. 保持服务只监听 `127.0.0.1`（不暴露公网）
-3. 定期备份 `.token_cache.json` 文件
+```env
+PORT=8787                          # 服务端口，默认 8787
+GEMINI_PROJECT_ID=your-project-id  # 可选，自动发现
+```
+
+## API 使用
+
+### 端点
+
+| 端点 | 说明 |
+|------|------|
+| `GET /` | 服务信息 |
+| `GET /health` | 健康检查 |
+| `GET /v1/models` | 列出可用模型 |
+| `POST /v1/chat/completions` | Chat Completions API |
+
+### 示例请求
+
+```bash
+# 非流式
+curl -X POST http://localhost:8787/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gemini-3.1-pro-preview",
+    "messages": [{"role": "user", "content": "Hello"}],
+    "stream": false
+  }'
+
+# 流式
+curl -X POST http://localhost:8787/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gemini-3.1-pro-preview",
+    "messages": [{"role": "user", "content": "Hello"}],
+    "stream": true
+  }'
+```
+
+### OpenClaw 配置
+
+在 OpenClaw 中配置：
+```
+API Base URL: http://your-server:8787/v1
+API Key: (留空或任意值)
+Model: gemini-3.1-pro-preview
+```
+
+## 配置要点
+
+### 1. OAuth 认证
+服务启动时会自动读取 `~/.gemini/oauth_creds.json`。确保：
+- 已运行 `gemini auth` 完成认证
+- Token 未过期（可运行 `gemini` 命令测试）
+
+### 2. Project ID
+Code Assist API 需要 Project ID。服务会自动调用 `loadCodeAssist` 发现项目 ID。
+如果失败，可设置环境变量 `GEMINI_PROJECT_ID`。
+
+### 3. 端口开放
+服务监听 `0.0.0.0:8787`，确保防火墙/安全组开放该端口。
+
+### 4. 速率限制
+Code Assist API 有速率限制，超出会返回 429 错误，等待几秒后重试即可。
+
+## 文件结构
+
+```
+gemini-proxy/
+├── src/
+│   ├── index.js          # Express 服务入口
+│   ├── gemini-client.js  # Gemini API 客户端
+│   ├── auth.js           # OAuth 认证管理
+│   ├── stream-transformer.js
+│   └── routes/
+│       └── openai.js     # OpenAI API 路由
+├── package.json
+├── .env                  # 环境变量（不提交）
+└── README.md
+```
+
+## 计费说明
+
+本代理使用 Gemini CLI 的认证方式，所有 API 调用通过 Code Assist API：
+- 使用 Gemini Code Assist 的免费额度（standard-tier）
+- 或 Google One AI Pro 订阅额度
+- **不会产生额外费用**
+
+---
+
+# AI Coding Handoff
+
+> 以下信息供 AI 编码工具（如 Claude Code）参考，方便后续维护升级。
+
+## 核心发现
+
+### Code Assist API vs Generative Language API
+
+**关键发现**：Gemini 3.x 模型可以通过 Code Assist API 访问，无需额外的 OAuth scope。
+
+| API | 端点 | OAuth Scope | 支持 Gemini 3.x |
+|-----|------|-------------|-----------------|
+| Code Assist | `cloudcode-pa.googleapis.com/v1internal` | `cloud-platform` | ✅ |
+| Generative Language | `generativelanguage.googleapis.com/v1beta` | `generative-language` | ❌ (需要额外 scope) |
+
+Gemini CLI 内部使用 Code Assist API，所以其 OAuth token 可以访问所有模型。
+
+### 认证流程
+
+```
+1. 读取 ~/.gemini/oauth_creds.json
+2. 使用 client_id + client_secret 刷新 access_token
+3. 调用 loadCodeAssist 获取 project_id
+4. 使用 access_token + project_id 调用 streamGenerateContent
+```
+
+### OAuth 凭证（Gemini CLI 内置）
+
+```javascript
+const OAUTH_CLIENT_ID = "YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com";
+const OAUTH_CLIENT_SECRET = "YOUR_GOOGLE_OAUTH_CLIENT_SECRET";
+const OAUTH_SCOPE = [
+  "https://www.googleapis.com/auth/cloud-platform",
+  "https://www.googleapis.com/auth/userinfo.email",
+  "https://www.googleapis.com/auth/userinfo.profile"
+];
+```
+
+### Code Assist API 请求格式
+
+```javascript
+// 端点
+POST https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse
+
+// 请求体
+{
+  "model": "gemini-3.1-pro-preview",
+  "project": "modified-bus-18gwt",  // 从 loadCodeAssist 获取
+  "request": {
+    "contents": [{ "role": "user", "parts": [{ "text": "Hello" }] }],
+    "generationConfig": { ... }
+  }
+}
+
+// 响应格式 (SSE)
+data: {"response": {"candidates": [{"content": {"parts": [{"text": "..."}]}}]}}
+```
+
+### 响应解析注意事项
+
+Gemini 3.x 的响应中，`parts` 可能同时包含：
+- `text`: 输出文本
+- `thoughtSignature`: 思考签名（二进制数据，用于内部）
+- `thought: true`: 表示这是思考内容
+
+正确解析：
+```javascript
+for (const part of candidate.content.parts) {
+  // 普通文本（thought !== true）
+  if (part.text && part.thought !== true) {
+    yield { type: 'text', data: part.text };
+  }
+  // 思考内容
+  if (part.thought === true && part.text) {
+    yield { type: 'reasoning', data: part.text };
+  }
+}
+```
+
+### 模型别名
+
+某些模型名称在 Code Assist API 中不存在，需要映射：
+
+```javascript
+const MODEL_ALIASES = {
+  'gemini-3.1-flash-lite-preview': 'gemini-3-flash-preview',
+  'gemini-3.1-flash-preview': 'gemini-3-flash-preview',
+};
+```
+
+### 常见错误
+
+| 错误码 | 原因 | 解决方案 |
+|--------|------|----------|
+| 401 | Token 过期 | 刷新 OAuth token |
+| 404 | 模型不存在 | 检查模型名称，使用别名 |
+| 429 | 速率限制 | 等待几秒后重试 |
+| 403 | Project ID 无效 | 检查 loadCodeAssist 返回的 project |
+
+## 升级维护指南
+
+### 添加新模型
+
+1. 在 `gemini-client.js` 的 `DEFAULT_MODELS` 中添加：
+```javascript
+'gemini-x.x-model-name': {
+  contextWindow: 1000000,
+  maxTokens: 65536,
+  thinking: true/false,
+  api: 'codeassist'
+}
+```
+
+2. 如需别名，在 `MODEL_ALIASES` 中添加映射。
+
+### 调试技巧
+
+```bash
+# 测试 Code Assist API 直接调用
+ACCESS_TOKEN="ya29..."
+PROJECT_ID="..."
+
+curl -X POST "https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"model\": \"gemini-3.1-pro-preview\", \"project\": \"$PROJECT_ID\", \"request\": {\"contents\": [{\"role\": \"user\", \"parts\": [{\"text\": \"Hello\"}]}]}}"
+
+# 刷新 Token
+curl -X POST "https://oauth2.googleapis.com/token" \
+  -d "client_id=YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com" \
+  -d "client_secret=YOUR_GOOGLE_OAUTH_CLIENT_SECRET" \
+  -d "refresh_token=YOUR_REFRESH_TOKEN" \
+  -d "grant_type=refresh_token"
+```
+
+### Gemini CLI 源码位置
+
+Gemini CLI 的关键代码在（用于参考）：
+```
+~/npm-global/lib/node_modules/@google/gemini-cli/bundle/chunk-2OFO4ODK.js
+```
+
+搜索关键词：
+- `CODE_ASSIST_ENDPOINT` - API 端点
+- `OAUTH_CLIENT_ID` / `OAUTH_CLIENT_SECRET` - 认证凭证
+- `toGenerateContentRequest` - 请求格式
+- `fromGenerateContentResponse` - 响应解析
+
+## 已知限制
+
+1. **速率限制**：Code Assist API 有请求频率限制，超出需等待
+2. **模型可用性**：某些模型名称（如 `gemini-3.1-flash-lite-preview`）在 API 中不存在，需要别名
+3. **思考内容**：Gemini 3.x Pro 模型会生成 `thoughtSignature`，这是二进制数据，不应输出给用户
 
 ## License
 

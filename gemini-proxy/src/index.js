@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import openaiRoutes from './routes/openai.js';
+import { GeminiApiClient } from './gemini-client.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,6 +16,7 @@ const PORT = process.env.PORT || 8787;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
+// 环境配置
 const env = {
   GCP_SERVICE_ACCOUNT: process.env.GCP_SERVICE_ACCOUNT || null,
   GEMINI_PROJECT_ID: process.env.GEMINI_PROJECT_ID || null,
@@ -23,6 +25,7 @@ const env = {
   ENABLE_FAKE_THINKING: process.env.ENABLE_FAKE_THINKING || 'false'
 };
 
+// 加载 OAuth 凭证
 if (!env.GCP_SERVICE_ACCOUNT) {
   const credsPath = path.join(process.env.HOME || '/root', '.gemini', 'oauth_creds.json');
   if (fs.existsSync(credsPath)) {
@@ -32,19 +35,20 @@ if (!env.GCP_SERVICE_ACCOUNT) {
       env.GCP_SERVICE_ACCOUNT = JSON.stringify(credsJson);
       console.log(`[Server] Loaded OAuth credentials from ${credsPath}`);
     } catch (e) {
-      console.error(`[Server] Failed to load credentials from ${credsPath}:`, e.message);
+      console.error(`[Server] Failed to load credentials:`, e.message);
     }
   }
 }
 
 if (!env.GCP_SERVICE_ACCOUNT) {
-  console.error('[Server] ERROR: GCP_SERVICE_ACCOUNT not set and no ~/.gemini/oauth_creds.json found');
-  console.error('[Server] Please run `gemini auth` on your local machine and copy credentials to the server');
+  console.error('[Server] ERROR: No OAuth credentials found');
+  console.error('[Server] Please run `gemini auth` first');
   process.exit(1);
 }
 
 app.locals.env = env;
 
+// 路由
 app.use('/v1', openaiRoutes);
 
 app.get('/', (req, res) => {
@@ -69,8 +73,31 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: err.message || 'Internal server error' });
 });
 
-app.listen(PORT, '127.0.0.1', () => {
-  console.log(`[Server] Gemini Proxy running on http://127.0.0.1:${PORT}`);
-  console.log(`[Server] OpenAI-compatible endpoint: http://127.0.0.1:${PORT}/v1/chat/completions`);
-  console.log(`[Server] Models endpoint: http://127.0.0.1:${PORT}/v1/models`);
+// ========== 启动服务（含预热）==========
+
+async function startServer() {
+  const startTime = Date.now();
+
+  // 创建客户端实例用于预热
+  const warmupClient = new GeminiApiClient(env);
+
+  // 并行执行预热和服务器启动
+  console.log('[Server] Starting warmup...');
+
+  // 先启动服务器监听（不等待预热完成）
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    const elapsed = Date.now() - startTime;
+    console.log(`[Server] Gemini Proxy running on http://0.0.0.0:${PORT} (${elapsed}ms)`);
+    console.log(`[Server] Endpoints: /v1/chat/completions, /v1/models`);
+  });
+
+  // 后台预热
+  warmupClient.warmup().catch(err => {
+    console.warn('[Server] Warmup failed (will retry on first request):', err.message);
+  });
+}
+
+startServer().catch(err => {
+  console.error('[Server] Startup failed:', err);
+  process.exit(1);
 });
