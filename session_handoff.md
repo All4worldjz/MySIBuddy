@@ -1,44 +1,60 @@
 # Session Handoff
 
-Last updated: 2026-04-03 (Night Session)
+Last updated: 2026-04-06 (健康检查与安全加固 Session)
 
 ## Current repo state
 
 - Branch: `dev`
-- Latest commit: `pending`
-- This commit contains:
-  - **The Great Restoration**: Recovered agent cognitive souls from Apr 1st backups.
-  - **Final Intelligence Architecture**: Production-ready Search Orchestrator V5.0 (Markdown formatted).
-  - **Tiered Security Shield**: Master-Worker onion defense (Chief unsandboxed, Hubs fully sandboxed).
-  - **Experience Handoff**: `RETROSPECTIVE_SEARCH_ARCH.md` for future tool transition.
+- Latest commit: 记录本次系统健康检查与安全加固
+- Key changes:
+  - **安全加固完成**: SSH禁用root/密码认证、防火墙规则、4GB Swap
+  - **幽灵目录清理**: devcopilot-hub 已删除
+  - **文档同步**: QWEN.md、codex_handsoff.md 已更新反映实际配置
+  - **Sandbox分层**: 暂不配置，后续专题研究
 
 ## Current production state
 
-Verified on remote host `admin@47.82.234.46` (OpenClaw 2026.4.2):
+Verified on remote host `admin@47.82.234.46` (OpenClaw 2026.4.5):
 
-- `openclaw-gateway` running (Version: **2026.4.2**)
-- `Channels`: Telegram (3/3), Feishu (2/2), Weixin (1/1) — all **ON / OK**.
-- **The Search Trinity**:
-  - `search-service.service`: Active on port `18790`.
-  - Providers: DDG, EXA, Tavily (Injected with real PROD keys).
-- **Cognitive Fidelity**:
-  - All agents have recovered their full SOUL, IDENTITY, and MEMORY (verified Jack/Linux contributor context).
-- **Safety**:
-  - `venture-hub` and all Hubs are now in **Docker Sandboxes**.
-  - `chief-of-staff` is the sole gatekeeper for network and admin tools.
+- `openclaw-gateway` running (Version: **2026.4.5**)
+- `Channels`: Telegram (3/3), Feishu (2/2) — all **ON / OK**
+- `Agents`: 7 agents (chief-of-staff + 6 hubs)
+- `Memory`: 57MB total, fts ready
+- `Model routing`: MiniMax-M2.7 (primary) + modelstudio fallbacks
+
+**Security Hardening (2026-04-06 Completed):**
+| Measure | Status | Verification |
+|---------|--------|--------------|
+| SSH root login | `PermitRootLogin no` | ✅ Verified |
+| SSH password auth | `PasswordAuthentication no` | ✅ Verified |
+| Firewall | SSH(22)+ESTABLISHED+lo+DROP | ✅ Verified, persisted |
+| Swap | 4GB swapfile | ✅ Verified |
+
+**Configuration Notes:**
+- Sandbox: all agents `sandbox.mode = "off"` (待专题研究)
+- Provider: MiniMax + modelstudio (无 Google Gemini)
+- Feishu `accounts.default`: harmless (无 appId/appSecret)
 
 ## What happened in this session
 
-1. **Cognitive Rescue**: Performed full physical restore of `*.md` files from `pre-concise-subagent-20260401` after a heavy prompt rewrite incident.
-2. **System Alignment**: Fully resolved the "Path Ghost" issue by forcing Systemd to use `/usr/bin/openclaw`.
-3. **Microservice Finalization**: 
-   - Upgraded `search_service.js` to V5.0. 
-   - Implemented direct secrets reading and Markdown auto-formatting.
-   - Fixed the "Content Blackhole" where agents couldn't parse the raw JSON search results.
-4. **Collaboration Protocol**: Solidified the "Search Delegation Constitution," instructing isolated Hubs to request info from the Chief.
+1. **Full Health Check**: 执行系统级和 OpenClaw 系统健康检查，识别安全、功能、文档偏差问题
+2. **Phase 1 Security Hardening**: 完成 SSH加固、防火墙配置、Swap配置
+3. **Phase 2 Documentation Sync**: 更新 QWEN.md、codex_handsoff.md 反映实际配置状态
+4. **Ghost Directory Cleanup**: 删除 devcopilot-hub 幽灵目录
+5. **Feishu default Analysis**: 确认 accounts.default 无影响，保持不动
+
+## Identified issues (for future action)
+
+| Category | Issue | Priority | Notes |
+|----------|-------|----------|-------|
+| 安全 | Sandbox分层未配置 | 专题研究 | 当前全部off，需研究Chief:off+Hubs:all |
+| 功能 | search-service 未部署 | 可选 | 文档提及但实际无部署 |
+| 功能 | gemini-proxy 未部署 | 参考保留 | 当前不使用 Gemini |
+| 功能 | Weixin 渠道未配置 | 可选 | 文档提及但实际无配置 |
+| 文档 | GEMINI.md 需更新 | 待执行 | 标记为历史参考 |
 
 ## Read this first next time
 
-1. `RETROSPECTIVE_SEARCH_ARCH.md`: For deep architectural understanding.
-2. `session_handoff.md`: To see the latest verification logs.
-3. `HANDOFF_SEARCH_FIX.md`: Historical transition notes.
+1. `codex_handsoff.md`: 生产实际配置和运维手册
+2. `QWEN.md`: 项目概述和职能边界
+3. `session_handoff.md`: 最新变更日志

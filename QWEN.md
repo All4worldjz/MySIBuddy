@@ -4,26 +4,35 @@
 
 **MySiBuddy** 是一个**控制平面仓库**，用于部署、加固和运维基于 OpenClaw 的个人智能体系统。这**不是**应用源代码仓库，而是生产环境的配置和运维仓库。
 
-生产系统运行在远程 Linux 服务器 `admin@47.82.234.46` 上，使用 OpenClaw `2026.4.2` 和 Node `24.13.0`。
+生产系统运行在远程 Linux 服务器 `admin@47.82.234.46` 上，使用 OpenClaw `2026.4.5` 和 Node `24.13.0`。
 
 ### 核心架构
 
 **7 智能体集群：**
-- `chief-of-staff`：编排器，拥有全局会话可见性、管理员权限、搜索委派能力（`sandbox.mode = off`）
-- `work-hub`、`venture-hub`、`life-hub`、`product-studio`、`zh-scribe`、`tech-mentor`：领域专用沙盒工作智能体（`sandbox.mode = all`）
+| Agent | 角色 | 主责域 | 渠道入口 |
+|-------|------|--------|----------|
+| `chief-of-staff` | 编排器 | 跨域统筹、审批、系统维护 | Telegram chief |
+| `work-hub` | 工作中枢 | 正式工作事务（不含公众号） | Feishu work |
+| `venture-hub` | 创业中枢 | 创业战略/PMF/MVP（不含技术选型） | Telegram personal (群组) |
+| `life-hub` | 生活中枢 | 生活财务事务（不含学习安排） | Telegram personal |
+| `product-studio` | 产品设计 | PRD、产品设计（后台specialist） | 无直接入口 |
+| `zh-scribe` | 中文成文 | 公众号全流程、中文成文、读书笔记 | Feishu scribe |
+| `tech-mentor` | AI导师 | 技术选型、科技学习、前沿跟踪 | Telegram mentor |
 
 **通信渠道：**
 - Telegram：3 个账号（`chief`、`personal`、`mentor`）
 - Feishu：2 个账号（`work`、`scribe`，通过 `openclaw-lark` 插件）
-- Weixin：1 个账号
 
-**模型路由：**
-- 主提供商：Google Gemini（多密钥故障转移：`google:primary` → `google:secondary` → `google:tertiary`）
-- 备用提供商：MiniMax（`minimax/MiniMax-M2.7`）
-- `zh-scribe` 的主模型是 `minimax/MiniMax-M2.7`（中文场景优化）
+**模型路由（2026-04-06 实际配置）：**
+- 主提供商：MiniMax（`minimax/MiniMax-M2.7`）
+- 备用提供商：阿里云百炼 ModelStudio（`modelstudio/qwen3.5-plus`、`modelstudio/kimi-k2.5` 等）
+- 所有智能体共享相同的主模型和备用链
+- **注意**：不再使用 Google Gemini，相关 gemini-proxy 子项目保留为参考代码
 
-**子项目：**
-- `gemini-proxy/`：OpenAI 兼容的 Gemini 代理，运行在端口 `8787`，通过 Google OAuth 认证访问 Gemini 模型
+**系统安全加固（2026-04-06 完成）：**
+- SSH：禁用 root 登录、禁用密码认证（仅密钥登录）
+- 防火墙：仅允许 SSH(22) + 已建立连接 + 本地回环
+- Swap：4GB swapfile 配置完成
 
 ---
 
@@ -32,22 +41,26 @@
 ### 运维文档
 - `codex_handsoff.md`：权威部署手册，用于在新环境重建完整 OpenClaw 拓扑
 - `AGENTS.md`：仓库级 AI 智能体操作规则（变更顺序、备份纪律、人机协作规范）
-- `skills/openclaw-plugin-channel-recovery/SKILL.md`：完整的 Codex 部署/恢复运行手册
-- `GEMINI.md`：Gemini 模型配置和多密钥认证设计说明
 - `session_handoff.md`：生产变更日志和当前状态记录
+- `GEMINI.md`：历史参考文档（Gemini 模型配置设计，当前未在生产使用）
 
 ### 防护脚本（`scripts/`）
-- `safe_openclaw_validate.sh`：验证候选配置（JSON 语法 + 7 智能体拓扑 + 插件策略）
+- `safe_openclaw_validate.sh`：验证候选配置（JSON 语法 + 拓扑检查）
 - `safe_openclaw_apply.sh`：唯一允许的生产发布路径（备份 → 验证 → 重启 → 冒烟测试 → 失败自动回滚）
 - `safe_openclaw_smoke.sh`：快速健康检查（渠道状态 + 致命日志信号）
 - `safe_openclaw_rollback.sh`：恢复已知良好的配置备份
 - `lib_openclaw_guardrails.sh`：防护逻辑共享库
+- `backup_openclaw_config.sh`：配置备份脚本（备份配置/记忆/系统文件到本地仓库）
+
+### 备份技能（`skills/backup-openclaw/`）
+- `SKILL.md`：OpenClaw 配置备份技能文档
+- **功能**：备份远程服务器的 agents 配置、记忆文件、系统 JSON 配置
+- **用法**：`./scripts/backup_openclaw_config.sh [--config|--memory|--system|--all|--dry-run]`
 
 ### 子项目（`gemini-proxy/`）
-- `package.json`：Node.js 项目定义（Express、cors、dotenv、node-fetch）
-- `src/index.js`：代理主程序
-- `.env.example`：环境变量模板
-- `gemini-proxy.service`：systemd 服务定义
+- **状态**：参考代码，未在生产环境部署
+- OpenAI 兼容的 Gemini API 代理服务设计，端口 `8787`
+- 使用 Google OAuth 认证访问 Gemini 模型
 
 ---
 
@@ -72,51 +85,79 @@ scripts/safe_openclaw_rollback.sh /home/admin/.openclaw/openclaw.json.pre-apply-
 ### 远程执行（SSH）
 
 ```bash
-# 检查系统状态
+# 检查系统深度状态
 ssh admin@47.82.234.46 'openclaw status --deep'
 
-# 检查智能体状态
-ssh admin@47.82.234.46 'openclaw status --deep | grep -E "(ON|OK|Agents)"'
+# 检查渠道状态
+ssh admin@47.82.234.46 'openclaw status --deep | grep -E "(ON|OK|Channel)"'
+
+# 查看当前配置
+ssh admin@47.82.234.46 'cat /home/admin/.openclaw/openclaw.json'
+
+# 列出备份文件
+ssh admin@47.82.234.46 'ls -la /home/admin/.openclaw/*.json.pre-*'
+
+# 验证安全配置
+ssh admin@47.82.234.46 'grep -E "^PermitRootLogin|^PasswordAuthentication" /etc/ssh/sshd_config'
+ssh admin@47.82.234.46 'sudo iptables -L INPUT -n'
+ssh admin@47.82.234.46 'free -h | grep Swap'
 ```
 
-### Gemini Proxy 子项目
+### 配置备份（本地仓库）
 
 ```bash
-cd gemini-proxy && npm install      # 安装依赖
-npm start                           # 启动代理（端口 8787）
-npm run dev                         # 开发模式（watch）
-curl http://127.0.0.1:8787/health   # 健康检查
+# 备份全部（配置+记忆+系统文件）
+./scripts/backup_openclaw_config.sh --all
+
+# 仅备份配置文件（AGENTS.md等）
+./scripts/backup_openclaw_config.sh --config
+
+# 仅备份记忆文件（memory目录）
+./scripts/backup_openclaw_config.sh --memory
+
+# 仅备份系统配置（JSON文件）
+./scripts/backup_openclaw_config.sh --system
+
+# 预览模式（不实际执行）
+./scripts/backup_openclaw_config.sh --dry-run --all
 ```
+
+**备份输出目录：**
+- `docs/agents-config-backup-YYYYMMDD/`：各agent的AGENTS.md、MEMORY.md、SOUL.md等
+- `docs/agents-memory-backup-YYYYMMDD/`：各agent的memory/*.md记忆条目
+- `docs/openclaw-config-backup-YYYYMMDD/`：openclaw.json、cron、telegram、feishu等系统配置
 
 ---
 
-## 配置约束（防护脚本强制检查）
+## 职能边界（2026-04-06 细化）
+
+| 职能域 | 主责Agent | 转交规则 |
+|--------|-----------|----------|
+| **公众号运营全流程** | zh-scribe | 策略、选题、正文、标题、排版、发布、数据复盘 |
+| **中文成文/研究** | zh-scribe | 公众号正文、读书笔记、历史研究、哲学研究 |
+| **纯生活学习安排** | zh-scribe | 读书计划等 |
+| **技术选型** | tech-mentor | 创业中的技术选型决策 |
+| **科技学习路径** | tech-mentor | 学习路径设计、训练考核、前沿跟踪 |
+| **创业战略** | venture-hub | PMF、MVP、实验设计（技术选型→tech-mentor） |
+| **正式工作事务** | work-hub | 不含公众号运营（公众号→zh-scribe） |
+| **生活财务事务** | life-hub | 不含学习安排（学习→zh-scribe/tech-mentor） |
+
+---
+
+## 配置约束
 
 ### 智能体拓扑
-必须精确包含 7 个智能体：
-1. `chief-of-staff`
-2. `work-hub`
-3. `venture-hub`
-4. `life-hub`
-5. `product-studio`
-6. `zh-scribe`
-7. `tech-mentor`
+必须精确包含 7 个智能体：`chief-of-staff`, `work-hub`, `venture-hub`, `life-hub`, `product-studio`, `zh-scribe`, `tech-mentor`
 
 ### 插件策略
 ```json
 {
   "plugins": {
-    "allow": ["openclaw-lark", "telegram", "duckduckgo", "openclaw-weixin", "minimax", "unified-search"],
+    "allow": ["openclaw-lark", "telegram", "duckduckgo", "minimax", "openai", "qwen"],
     "deny": ["feishu"]
   }
 }
 ```
-
-### 渠道账号
-- Telegram：`chief`、`personal`、`mentor`（+ `dev`）
-- Feishu：`work`、`scribe`
-- **禁止**：顶层 `channels.feishu.appId/appSecret`
-- **禁止**：`channels.feishu.accounts.default`（多账号模式下）
 
 ### 绑定规则
 - 必须有 7 条 `bindings` 路由规则
@@ -137,6 +178,10 @@ curl http://127.0.0.1:8787/health   # 健康检查
 }
 ```
 
+### Sandbox 配置（待专题研究）
+- 当前状态：所有智能体 `sandbox.mode = "off"`
+- 计划：后续专题研究分层 Sandbox（Chief: off, Hubs: all）
+
 ---
 
 ## 安全规则
@@ -154,14 +199,15 @@ curl http://127.0.0.1:8787/health   # 健康检查
 
 ## 已知陷阱
 
-### 配置损坏事件（2026-04-01）
+### 配置损坏事件（2026-04-01 历史）
 - `config.apply` 曾覆盖 `openclaw.json` 为不完整对象
 - 导致 `channels` 和 `bindings` 消失，所有机器人停止响应
 - **应对措施**：回滚到最近的 `openclaw.json.pre-*` 备份，重启 gateway
 
 ### Feishu 重复账号问题
 - 同一 Feishu 应用同时出现在顶层 `channels.feishu.*` 和 `channels.feishu.accounts.work` 会导致消息间歇性丢失
-- **解决**：移除顶层 `appId/appSecret`，移除 `default` 账号，只保留明确的真实账号（`work`、`scribe`）
+- **解决**：移除顶层 `appId/appSecret`，只保留明确的真实账号（`work`、`scribe`）
+- **注意**：`accounts.default` 无 appId/appSecret，不影响实际消息处理
 
 ### 新智能体认证缺失
 - 新建智能体目录后，如果没有复制 `auth-profiles.json` 和 `models.json`，会导致所有模型报认证错误

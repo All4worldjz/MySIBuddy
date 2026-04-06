@@ -1,10 +1,24 @@
-# GEMINI.md - Project Context & Instructions
+# GEMINI.md - Historical Reference Document
+
+> **⚠️ Status Notice (2026-04-06)**
+>
+> This document is preserved as **historical reference**. The current production system does NOT use Google Gemini as a model provider.
+>
+> **Current Provider Configuration:**
+> - Primary: MiniMax (`minimax/MiniMax-M2.7`)
+> - Fallbacks: Alibaba Cloud ModelStudio (`modelstudio/qwen3.5-plus`, `modelstudio/kimi-k2.5`, etc.)
+>
+> The `gemini-proxy/` subproject remains in the repository as reference code for future Gemini integration if needed.
+
+---
+
+## Original Context (Pre-2026-04-06)
 
 This repository, `MySiBuddy`, is a specialized operational environment for deploying, hardening, and maintaining an **OpenClaw-based** personal agent system. It is not an application source repo but a "Control Plane" for a production agent topology.
 
-## 🎯 Project Overview
+## 🎯 Project Overview (Historical)
 
-The project manages a 7-agent OpenClaw cluster (including `chief-of-staff`, `work-hub`, etc.) hosted on a remote Linux server. It emphasizes **Configuration Guardrails**, **Multi-Model Routing** (Gemini & MiniMax), and **Secure Channel Integration** (Telegram & Feishu).
+The project manages a 7-agent OpenClaw cluster (including `chief-of-staff`, `work-hub`, etc.) hosted on a remote Linux server. It emphasizes **Configuration Guardrails**, **Multi-Model Routing**, and **Secure Channel Integration** (Telegram & Feishu).
 
 ### Core Architecture
 - **Orchestrator**: `chief-of-staff` acts as the central hub with global session visibility.
@@ -37,41 +51,39 @@ ssh -o BatchMode=yes admin@47.82.234.46 'openclaw status --deep'
 ## 📜 Development & Operational Conventions
 
 ### 1. The "Golden" Configuration (`openclaw.json`)
-- **Plugin Policy**: Strictly enforces `plugins.allow = ["openclaw-lark", "telegram", "duckduckgo"]` and `plugins.deny = ["feishu"]`.
+- **Plugin Policy**: Strictly enforces `plugins.deny = ["feishu"]`.
 - **Routing**: Account-to-agent routing must live in top-level `bindings`, not in agent prompt text.
 - **Session Management**: `idleHours` is set to `8` to prevent excessive token consumption in long-running threads.
 
-### 2. Multi-Key & Provider Design
-- Uses provider-level auth profiles (e.g., `google:primary`, `google:secondary`).
-- Failover order is defined in `auth.order`. Gemini is the primary provider; MiniMax is the fallback.
+### 2. Provider Design (Historical Reference)
+- **Original Design**: Uses provider-level auth profiles (e.g., `google:primary`, `google:secondary`).
+- **Failover**: Gemini was planned as primary; MiniMax as fallback.
+- **Current Reality**: MiniMax + ModelStudio only.
 
 ### 3. Safety & Sandbox Rules
-- High-risk agents (e.g., `venture-hub` performing `web_fetch`) **MUST** run with `sandbox.mode: "all"`.
 - Never use `openclaw doctor --fix` automatically in production.
 
 ### 4. Administrative Privilege (Least Privilege)
-- **Restricted Access**: System health checks (`sys_status`), log audits (`sys_recent_logs`), and smoke tests (`sys_smoke_test`) are strictly reserved for the **`chief-of-staff`** agent.
+- **Restricted Access**: System health checks are reserved for the **`chief-of-staff`** agent.
 
-### 5. Intelligence Delegation Protocol
-- **Search Control**: All `unified_search` and `web_fetch` operations are centralized in the `chief-of-staff`.
-- **Worker Logic**: Hub agents (Work, Venture, etc.) are sandboxed and must delegate information gathering to the Chief via `subagents`.
-- **Data Flow**: Chief acts as a data cleaner, summarizing external content before passing it back to isolated workers to prevent injection attacks.
+### 5. Intelligence Delegation Protocol (Historical Reference)
+- **Search Control**: The original design centralized search in `chief-of-staff`.
+- **Current Note**: unified-search microservice is NOT deployed.
 
 ### 6. Mandatory Documentation
-- **`codex_handsoff.md`**: The authoritative source of truth for rebuilding the system.
-- **`AGENTS.md`**: Strict operating rules for AI agents (Codex/Gemini) working in this repo.
+- **`codex_handsoff.md`**: The authoritative source of truth for rebuilding the system (updated 2026-04-06).
+- **`AGENTS.md`**: Strict operating rules for AI agents working in this repo.
 - **`session_handoff.md`**: Chronological log of production changes and current status.
 
 ## 📂 Key Files Summary
 
-- `scripts/lib_openclaw_guardrails.sh`: Central logic for the guardrail system (shared by all `safe_*` scripts).
-- `skills/openclaw-plugin-channel-recovery/SKILL.md`: Comprehensive runbook for troubleshooting and deployment.
-- `.github/commands/gemini-invoke.toml`: Configuration for Gemini CLI integration within GitHub Actions.
+- `scripts/lib_openclaw_guardrails.sh`: Central logic for the guardrail system.
+- `gemini-proxy/`: Reference code for Gemini API proxy (NOT deployed in production).
 
 ## 🤖 AI Agent Instructions
 
 When acting as an agent in this repository:
-1. **Always Read First**: Consult `session_handoff.md` and `codex_handsoff.md` before any action.
+1. **Always Read First**: Consult `codex_handsoff.md` for current production reality.
 2. **Backup Before Edits**: Never modify remote configs without a timestamped local backup.
 3. **Use Guardrails**: Do not manually replace `openclaw.json`. Use `safe_openclaw_apply.sh`.
-4. **Validation is Final**: A task is only "Done" when `safe_openclaw_smoke.sh` passes on the remote host.
+4. **Validation is Final**: A task is only "Done" when smoke tests pass on the remote host.
