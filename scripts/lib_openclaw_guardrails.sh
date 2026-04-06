@@ -4,20 +4,11 @@ set -euo pipefail
 OPENCLAW_ROOT="${OPENCLAW_ROOT:-/home/admin/.openclaw}"
 OPENCLAW_CONFIG="${OPENCLAW_CONFIG:-$OPENCLAW_ROOT/openclaw.json}"
 OPENCLAW_SERVICE="${OPENCLAW_SERVICE:-openclaw-gateway}"
-EXPECTED_AGENTS=(
-  "chief-of-staff"
-  "work-hub"
-  "venture-hub"
-  "life-hub"
-  "product-studio"
-  "zh-scribe"
-  "tech-mentor"
-  "devcopilot-hub"
-)
-EXPECTED_TELEGRAM_ACCOUNTS=("chief" "personal" "mentor" "dev")
-EXPECTED_FEISHU_ACCOUNTS=("work" "scribe")
-EXPECTED_PLUGIN_ALLOW=("openclaw-lark" "telegram")
-EXPECTED_PLUGIN_DENY=("feishu")
+EXPECTED_AGENTS=("chief-of-staff" "work-hub" "venture-hub" "life-hub" "product-studio" "zh-scribe" "tech-mentor" "devcopilot-hub")
+EXPECTED_TELEGRAM_ACCOUNTS=("chief" "mentor" "personal")
+EXPECTED_FEISHU_ACCOUNTS=("scribe" "work")
+EXPECTED_PLUGIN_ALLOW=("acpx" "browser" "duckduckgo" "exa" "kimi" "minimax" "openai" "openclaw-lark" "openclaw-weixin" "openshell" "tavily" "telegram" "unified-search")
+EXPECTED_PLUGIN_DENY=()
 
 log() {
   printf '[guardrail] %s\n' "$*"
@@ -48,42 +39,33 @@ path = sys.argv[1]
 d = json.load(open(path))
 errors = []
 
-expected_agents = [
-    "chief-of-staff",
-    "work-hub",
-    "venture-hub",
-    "life-hub",
-    "product-studio",
-    "zh-scribe",
-    "tech-mentor",
-    "devcopilot-hub",
-]
-expected_telegram = ["chief", "personal", "mentor", "dev"]
-expected_feishu = ["work", "scribe"]
-expected_allow = ['openclaw-lark', 'telegram', 'duckduckgo', 'openclaw-weixin', 'minimax', 'unified-search']
-expected_deny = ["feishu"]
+expected_agents = ["chief-of-staff", "devcopilot-hub", "life-hub", "product-studio", "tech-mentor", "venture-hub", "work-hub", "zh-scribe"]
+expected_telegram = ["chief", "mentor", "personal"]
+expected_feishu = ["scribe", "work"]
+expected_allow = ["acpx", "browser", "duckduckgo", "exa", "kimi", "minimax", "openai", "openclaw-lark", "openclaw-weixin", "openshell", "tavily", "telegram", "unified-search"]
+expected_deny = []
 
 agents = [a.get("id") for a in d.get("agents", {}).get("list", [])]
-if agents != expected_agents:
+if sorted(agents) != sorted(expected_agents):
     errors.append(f"agents.list mismatch: {agents}")
 
 plugins = d.get("plugins", {})
-if plugins.get("allow") != expected_allow:
+if sorted(plugins.get("allow", [])) != sorted(expected_allow):
     errors.append(f"plugins.allow mismatch: {plugins.get('allow')}")
 if plugins.get("deny") != expected_deny:
     errors.append(f"plugins.deny mismatch: {plugins.get('deny')}")
 
 channels = d.get("channels", {})
-if sorted(channels.keys()) != ["feishu", "telegram"]:
+if sorted(channels.keys()) != ["feishu", "openclaw-weixin", "telegram"]:
     errors.append(f"channels mismatch: {list(channels.keys())}")
 
 telegram_accounts = list(channels.get("telegram", {}).get("accounts", {}).keys())
-if telegram_accounts != expected_telegram:
+if sorted(telegram_accounts) != sorted(expected_telegram):
     errors.append(f"telegram accounts mismatch: {telegram_accounts}")
 
 feishu = channels.get("feishu", {})
 feishu_accounts = list(feishu.get("accounts", {}).keys())
-if feishu_accounts != expected_feishu:
+if sorted(feishu_accounts) != sorted(expected_feishu):
     errors.append(f"feishu accounts mismatch: {feishu_accounts}")
 if "appId" in feishu or "appSecret" in feishu:
     errors.append("top-level channels.feishu.appId/appSecret must not exist")

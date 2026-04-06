@@ -2,26 +2,25 @@
 
 This is the authoritative runbook for rebuilding and migrating the MySiBuddy OpenClaw system.
 
-## 1. Production Reality (Verified 2026-04-03)
+## 1. Production Reality (Verified 2026-04-06)
 
 Verified from remote host `admin@47.82.234.46`:
 
-- OpenClaw `2026.4.2`, system Node `24.13.0`
-- Agents: `chief-of-staff` (Admin/Search), 6 Hub Agents (Sandboxed)
-- Channels: Telegram `3/3`, Feishu `2/2`, Weixin `1/1`
+- OpenClaw `2026.4.5`, system Node `24.13.0`
+- Agents: `chief-of-staff` (default/admin), 6 Hub Agents
+- Channels: Telegram `3/3`, Feishu `2/2`
 - Security Architecture:
-  - `chief-of-staff`: `sandbox.mode = off`
-  - `hubs`: `sandbox.mode = all`, `tools.fs.workspaceOnly = true`
+  - All agents: `sandbox.mode = "off"` (待专题研究分层配置)
+  - SSH: root login disabled, password auth disabled
+  - Firewall: SSH(22) + ESTABLISHED + loopback only
+  - Swap: 4GB configured
 - Plugin policy:
-  - `plugins.allow = ["openclaw-lark", "telegram", "duckduckgo", "openclaw-weixin", "minimax", "unified-search"]`
+  - `plugins.allow = ["duckduckgo", "minimax", "openclaw-lark", "telegram", "openai", "qwen"]`
+  - `plugins.deny = ["feishu"]`
 - Performance: `idleHours = 8`, `archiveAfterMinutes = 60`
-- Unified Search: Microservice on port `18790`, bridged via `curl`.
+- **Note**: No unified-search microservice, no gemini-proxy deployed
 
 Do not drift from this shape unless explicitly requested.
-
-Noise Cleanup:
-- Stale `plugins.entries.feishu` removed.
-- Redundant `default` accounts removed.
 
 ## 2. Non-Negotiable Rules
 
@@ -92,76 +91,53 @@ Operational rule:
 
 ## 3. LLM API Setup (Critical)
 
-### 3.1 Model intent
+### 3.1 Model intent (2026-04-06 实际配置)
 
-Verified current mapping:
+Current production mapping:
 
-- `chief-of-staff`: primary `google/gemini-3.1-flash-lite-preview`, fallback `minimax/MiniMax-M2.7`
-- `work-hub`: primary `google/gemini-3.1-flash-lite-preview`, fallbacks `google/gemini-3.1-pro-preview`, `minimax/MiniMax-M2.7`
-- `venture-hub`: primary `google/gemini-3.1-flash-lite-preview`, fallbacks `google/gemini-3.1-pro-preview`, `minimax/MiniMax-M2.7`
-- `life-hub`: primary `google/gemini-3.1-flash-lite-preview`, fallback `minimax/MiniMax-M2.7`
-- `product-studio`: primary `google/gemini-3.1-pro-preview`, fallbacks `google/gemini-3.1-flash-lite-preview`, `minimax/MiniMax-M2.7`
-- `zh-scribe`: primary `minimax/MiniMax-M2.7`, fallbacks `google/gemini-3.1-pro-preview`, `google/gemini-3.1-flash-lite-preview`
-- `tech-mentor`: primary `google/gemini-3.1-flash-lite-preview`, fallbacks `google/gemini-3.1-pro-preview`, `minimax/MiniMax-M2.7`
+- All agents: primary `minimax/MiniMax-M2.7`
+- Fallbacks: `modelstudio/qwen3.5-plus`, `modelstudio/glm-5`, `modelstudio/kimi-k2.5`, etc.
+
+**Note**: Google Gemini provider is NOT configured. All agents use MiniMax + ModelStudio.
 
 ### 3.2 Provider auth design
 
-Use provider profiles, not raw keys in `openclaw.json`.
+Use provider profiles stored in agent's `auth-profiles.json`.
 
-Recommended profile IDs:
+Current active profiles:
 
-- `google:primary`
-- `google:secondary`
-- `google:tertiary`
-- `minimax:primary`
-
-Recommended auth order:
-
-```json
-{
-  "auth": {
-    "order": {
-      "google": ["google:primary", "google:secondary", "google:tertiary"],
-      "minimax": ["minimax:primary"]
-    }
-  }
-}
-```
+- `minimax:global`: MiniMax API key
+- `modelstudio:default`: Alibaba Cloud Bailian API key
 
 ### 3.3 Human operator steps (copy-paste)
 
 Ask the human to do only this:
 
-1. Provide Google key 1, key 2, key 3, and MiniMax key.
+1. Provide MiniMax API key and ModelStudio (Bailian) API key.
 2. Do not edit server files manually.
 
 Codex executes:
 
 ```bash
-openclaw models auth paste-token --provider google --profile-id "google:primary"
-openclaw models auth paste-token --provider google --profile-id "google:secondary"
-openclaw models auth paste-token --provider google --profile-id "google:tertiary"
-openclaw models auth paste-token --provider minimax --profile-id "minimax:primary"
-openclaw models auth order set --provider google google:primary google:secondary google:tertiary
-openclaw models auth order set --provider minimax minimax:primary
+# Update auth profiles in agent directories
+# Copy from chief-of-staff/agent/auth-profiles.json to other agents
 ```
 
 Then verify provider auth state:
 
 ```bash
-openclaw models auth list
-openclaw models auth order show --provider google
-openclaw models auth order show --provider minimax
+# Check auth-profiles.json in each agent directory
+cat /home/admin/.openclaw/agents/chief-of-staff/agent/auth-profiles.json
 ```
 
 ### 3.4 Agent model mapping checklist
 
 Before restart, confirm in `openclaw.json`:
 
-1. `zh-scribe.primary == minimax/MiniMax-M2.7`
-2. `tech-mentor.primary == google/gemini-3.1-flash-lite-preview`
-3. both agents include fallback chains
-4. no accidental model-name aliases pointing to removed providers
+1. All agents' primary model is `minimax/MiniMax-M2.7`
+2. Fallback chain includes modelstudio models
+3. `agents.defaults.model.primary` is set correctly
+4. Each agent directory has `auth-profiles.json` and `models.json`
 
 ### 3.5 Frequent failures
 
@@ -226,8 +202,8 @@ Required policy:
 ### 4.4 Critical anti-conflict rules
 
 - Do not keep top-level `channels.feishu.appId` and `channels.feishu.appSecret` in multi-account mode.
-- Do not keep `channels.feishu.accounts.default` unless it is a real separate Feishu app.
 - Keep only explicit real accounts (`work`, `scribe`).
+- `accounts.default` without appId/appSecret is harmless (no message processing).
 
 Known failure signature:
 
@@ -266,9 +242,10 @@ openclaw status --deep
 
 ### 5.4 Current memory shape (verified)
 
-- DBs present: `chief-of-staff.sqlite`, `work-hub.sqlite`
+- DBs present: `chief-of-staff.sqlite`, `work-hub.sqlite`, `tech-mentor.sqlite`, `zh-scribe.sqlite`
+- Memory size: ~57MB total
 - Workspace memory dirs present for all 7 workspaces
-- Memory engine healthy (`vector ready`, `fts ready`)
+- Memory engine healthy (`fts ready`)
 
 ### 5.5 Agent-by-agent copy path
 
@@ -323,8 +300,10 @@ Hard rule for human-guided operations:
 
 1. `openclaw status --deep` shows Telegram `ON/OK` and Feishu `ON/OK`.
 2. `openclaw status --deep` shows 7 agents.
-3. Direct call to `zh-scribe` uses `MiniMax-M2.7`.
-4. Direct call to `tech-mentor` uses `gemini-3.1-flash-lite-preview`.
-5. Real Feishu `scribe` message lands in `agent:zh-scribe:feishu:...`.
-6. Real Telegram `mentor` message lands in `agent:tech-mentor:telegram:...`.
-7. Chief can spawn and read back sub-agent results.
+3. Direct call to any agent uses `MiniMax-M2.7` as primary.
+4. Real Feishu `scribe` message lands in `agent:zh-scribe:feishu:...`.
+5. Real Telegram `mentor` message lands in `agent:tech-mentor:telegram:...`.
+6. Chief can spawn and read back sub-agent results.
+7. SSH security: root login disabled, password auth disabled.
+8. Firewall: only SSH(22) allowed from external.
+9. Swap: 4GB available.

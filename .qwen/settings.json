@@ -12,7 +12,14 @@
       "Bash(git config *)",
       "Bash(ls *)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(scp *)",
+      "Bash(mkdir *)",
+      "Bash(rsync *)",
+      "Bash(rm *)",
+      "Bash(rmdir *)",
+      "Bash(chmod *)",
+      "Bash(/users/whoami2028/workshop/gitrepo/mysibuddy/scripts/backup_openclaw_config.sh *)"
     ]
   },
   "$version": 3

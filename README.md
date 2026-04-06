@@ -1,44 +1,137 @@
 # MySiBuddy
 
-`MySiBuddy` is a local repo for deploying, hardening, and operating the current OpenClaw-based personal agent system.
+`MySiBuddy` 是一个**控制平面仓库**，用于部署、加固和运维基于 OpenClaw 的个人智能体系统。这**不是**应用源代码仓库，而是生产环境的配置和运维仓库。
 
-## Branch Strategy
+## 生产环境
 
-- `main`: stable baseline for setup and verified changes
-- `dev`: active development branch
+| 项目 | 值 |
+|------|-----|
+| 服务器 | `admin@47.82.234.46` |
+| OpenClaw | `2026.4.5` |
+| Node.js | `24.13.0` |
+| 智能体 | 7 个（chief-of-staff + 6 hubs） |
+| 渠道 | Telegram 3账号 + Feishu 2账号 |
 
-## Project Structure
+## 分支策略
 
-- `codex_handsoff.md`: single handoff document for rebuilding the current production system in a new environment
-- `skills/`: reusable Codex skills for deployment, tuning, and recovery
-- `AGENTS.md`: repository-level operating rules for Codex execution and human collaboration
-- `scripts/`: production guardrail scripts for validating, applying, smoke-checking, and rolling back `openclaw.json`
+- `main`：稳定基线，用于已验证的变更
+- `dev`：活跃开发分支
 
-## Recommended Entry Points
+## 项目结构
 
-- Start with [`codex_handsoff.md`](codex_handsoff.md) when asking Codex to rebuild or migrate the current system onto a fresh host.
-- Read [`AGENTS.md`](AGENTS.md) when you want Codex to follow the repo-specific operating rules for deployment, migration, backup, and human-assisted troubleshooting.
-- Use [`skills/openclaw-plugin-channel-recovery/SKILL.md`](skills/openclaw-plugin-channel-recovery/SKILL.md) when asking Codex to deploy, harden, tune, or troubleshoot OpenClaw.
-- Do not use legacy scaffold placeholders as production source of truth; rely on handoff + skill + remote runtime verification.
-- Both the handoff and the skill now include the Feishu multi-account duplicate-app pitfall: do not keep the same old Feishu app both at top-level `channels.feishu.*` and under `channels.feishu.accounts.work`, and do not keep `channels.feishu.accounts.default` in multi-account mode unless it is a real separate app.
-- Both the handoff and the skill now also document the Gemini multi-key auth design: multiple Gemini API keys are implemented as ordered `google` auth profiles such as `google:primary`, `google:secondary`, and `google:tertiary`, with provider-level failover before model fallback.
-- Both the handoff and the skill now document the 2026-04-01 config clobber incident: do not use raw UI/agent `config.apply` as a production publish path; use the guardrail scripts and roll back first if `channels`/`bindings` disappear.
+```
+MySiBuddy/
+├── QWEN.md                    # 项目概述、职能边界、配置约束
+├── codex_handsoff.md          # 权威部署手册（重建系统必读）
+├── AGENTS.md                  # 仓库级 AI 智能体操作规则
+├── session_handoff.md         # 生产变更日志和当前状态
+├── GEMINI.md                  # 历史参考（Gemini 设计，当前未使用）
+├── scripts/                   # 防护脚本
+│   ├── safe_openclaw_validate.sh
+│   ├── safe_openclaw_apply.sh
+│   ├── safe_openclaw_smoke.sh
+│   ├── safe_openclaw_rollback.sh
+│   ├── backup_openclaw_config.sh
+│   └── lib_openclaw_guardrails.sh
+├── skills/                    # 可复用技能
+│   ├── openclaw-plugin-channel-recovery/
+│   └── backup-openclaw/
+└── gemini-proxy/              # 参考代码（未在生产部署）
+```
 
-## Git
+## 推荐入口
 
-This repository is initialized with `main` and `dev` branches.
+| 场景 | 文档 |
+|------|------|
+| 重建/迁移系统 | [`codex_handsoff.md`](codex_handsoff.md) |
+| 了解项目架构 | [`QWEN.md`](QWEN.md) |
+| AI 智能体操作规则 | [`AGENTS.md`](AGENTS.md) |
+| 部署/排错 OpenClaw | [`skills/openclaw-plugin-channel-recovery/SKILL.md`](skills/openclaw-plugin-channel-recovery/SKILL.md) |
+| 备份配置 | [`skills/backup-openclaw/SKILL.md`](skills/backup-openclaw/SKILL.md) |
 
-## Operational Docs
+## 核心架构
 
-- [`codex_handsoff.md`](codex_handsoff.md): authoritative deployment handoff for reproducing the full current OpenClaw topology, routing, auth artifacts, bot bindings, and validation flow on a new environment
-  Includes the Gemini multi-key design, `auth.order.google` pattern, secret injection flow, and verification rules.
-- [`AGENTS.md`](AGENTS.md): repository-level operating rules for Codex, including change order, backup discipline, human handoff style, and completion criteria.
-- [`scripts/safe_openclaw_validate.sh`](scripts/safe_openclaw_validate.sh): reject malformed or topology-breaking candidate configs before they touch production.
-- [`scripts/safe_openclaw_apply.sh`](scripts/safe_openclaw_apply.sh): only supported publish path; backs up, validates, restarts, smoke-checks, and auto-rolls back on failure.
-- [`scripts/safe_openclaw_smoke.sh`](scripts/safe_openclaw_smoke.sh): fast health probe for channel state and recent fatal log signals.
-- [`scripts/safe_openclaw_rollback.sh`](scripts/safe_openclaw_rollback.sh): restore a known-good `openclaw.json` backup and re-run smoke validation.
+### 智能体拓扑（7个）
 
-## Reusable Skills
+| Agent | 角色 | 渠道入口 |
+|-------|------|----------|
+| `chief-of-staff` | 编排器 | Telegram chief |
+| `work-hub` | 工作中枢 | Feishu work |
+| `venture-hub` | 创业中枢 | Telegram personal (群组) |
+| `life-hub` | 生活中枢 | Telegram personal |
+| `product-studio` | 产品设计 | 无直接入口 |
+| `zh-scribe` | 中文成文 | Feishu scribe |
+| `tech-mentor` | AI导师 | Telegram mentor |
 
-- [`skills/openclaw-plugin-channel-recovery/SKILL.md`](skills/openclaw-plugin-channel-recovery/SKILL.md): unified Codex runbook for OpenClaw deployment, plugin and channel policy, multi-agent routing, new-agent auth fixes, Feishu duplicate-account recovery, and production troubleshooting
-  Includes the Gemini multi-key provider-auth rule, operational meaning, and fast triage guidance.
+### 模型路由
+
+| Provider | 用途 |
+|----------|------|
+| MiniMax (`MiniMax-M2.7`) | 主模型 |
+| ModelStudio (`qwen3.5-plus`, `kimi-k2.5`) | 备用模型 |
+
+### 安全配置（2026-04-06 完成）
+
+| 措施 | 状态 |
+|------|------|
+| SSH root 登录 | 已禁用 |
+| SSH 密码认证 | 已禁用（仅密钥） |
+| 防火墙 | SSH(22) + 已建立连接 + 本地回环 |
+| Swap | 4GB |
+
+## 运维命令
+
+### 生产配置变更（必须使用防护脚本）
+
+```bash
+# 验证候选配置
+scripts/safe_openclaw_validate.sh /tmp/openclaw.candidate.json
+
+# 应用配置（备份 → 验证 → 重启 → 冒烟测试 → 失败回滚）
+scripts/safe_openclaw_apply.sh /tmp/openclaw.candidate.json
+
+# 快速健康检查
+scripts/safe_openclaw_smoke.sh
+
+# 回滚
+scripts/safe_openclaw_rollback.sh /home/admin/.openclaw/openclaw.json.pre-apply-YYYYmmdd-HHMMSS
+```
+
+### 配置备份
+
+```bash
+# 备份全部（配置+记忆+系统文件）
+./scripts/backup_openclaw_config.sh --all
+
+# 预览模式
+./scripts/backup_openclaw_config.sh --dry-run --all
+```
+
+### 远程执行
+
+```bash
+# 检查系统状态
+ssh admin@47.82.234.46 'openclaw status --deep'
+
+# 验证安全配置
+ssh admin@47.82.234.46 'grep -E "^PermitRootLogin|^PasswordAuthentication" /etc/ssh/sshd_config'
+ssh admin@47.82.234.46 'sudo iptables -L INPUT -n'
+ssh admin@47.82.234.46 'free -h | grep Swap'
+```
+
+## 已知陷阱
+
+### 配置损坏事件（2026-04-01 历史）
+- `config.apply` 曾覆盖 `openclaw.json` 为不完整对象
+- **应对**：回滚到 `openclaw.json.pre-*` 备份，重启 gateway
+
+### Feishu 重复账号问题
+- 同一 Feishu 应用同时出现在顶层和 accounts 下会导致消息丢失
+- **解决**：只保留明确的真实账号（`work`、`scribe`）
+
+## 历史参考
+
+- `GEMINI.md`：Gemini 多密钥认证设计（当前生产未使用）
+- `gemini-proxy/`：Gemini API 代理参考代码（未部署）
+- `RETROSPECTIVE_SEARCH_ARCH.md`：搜索架构设计记录
+- `HANDOFF_SEARCH_FIX.md`：搜索修复历史
