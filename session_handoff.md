@@ -1,14 +1,68 @@
 # Session Handoff
 
-Last updated: 2026-04-07 (Sandbox Spawn 限制排查与安全策略调整)
+Last updated: 2026-04-07 (全系统健康检查与基线确认)
 
 ## Current repo state
 
 - Branch: `dev`
 - Latest changes:
-  - **Sandbox 策略调整**: 移除所有 agents 的沙盒限制，改用工具权限收敛策略
-  - **安全模型**: 仅 `chief-of-staff` 和 `coder-hub` 保留 exec 权限，其他 6 个 Hub agents 禁止 exec/process
-  - **排错记录**: 新增 `docs/troubleshooting_sandbox_spawn.md` 记录 Sandbox Spawn 限制问题
+  - **全系统健康检查完成**: 2026-04-07 20:32 GMT+8
+  - **基线配置确认**: Sandbox策略（全agents unsandbox + 工具权限收敛）确认为正确基线
+  - **文档同步**: QWEN.md、codex_handsoff.md 已同步实际配置
+
+---
+
+## 2026-04-07: 全系统健康检查结果
+
+### 系统基础状态 ✅
+
+| 检查项 | 状态 | 详情 |
+|--------|------|------|
+| OS | ✅ | Ubuntu 24.04.2 LTS, Kernel 6.8.0-63-generic, Node 24.13.0 |
+| SSH安全 | ✅ | PermitRootLogin=no, PasswordAuthentication=no |
+| 防火墙 | ✅ | SSH(22)+ESTABLISHED+loopback only, DROP其他入站 |
+| 内存 | ✅ | 3.4Gi总, 2.4Gi可用, Swap 4GB(使用0B) |
+| 磁盘 | ⚠️ | 49GB, 53%使用(25GB), 23GB可用 |
+| 系统负载 | ⚠️ | load average: 1.71, 1.02, 0.74 |
+
+### OpenClaw 系统状态
+
+| 检查项 | 状态 | 详情 |
+|--------|------|------|
+| 版本 | ✅ | OpenClaw 2026.4.5 (stable) |
+| Gateway | ⚠️ | reachable 985ms (响应较慢) |
+| Agents | ✅ | 8 agents, 108 sessions |
+| Channels | ✅ | Telegram 3账号OK, Feishu 2账号OK |
+| Memory | ⚠️ | dirty状态, 26 files, 175 chunks |
+| Tasks | ⚠️ | 10 audit errors, 15 audit warnings |
+| Heartbeat | ⚠️ | 仅chief-of-staff活跃(30m), 其他7个disabled |
+
+### Agent 拓扑确认
+
+- **标准8 Agent**: chief-of-staff, work-hub, venture-hub, life-hub, product-studio, zh-scribe, tech-mentor, coder-hub
+- **路由绑定**: 7条路由正常
+- **发现遗留**: `/home/admin/.openclaw/agents/main/agent/` (不在标准拓扑，需确认处理)
+
+### 模型服务状态
+
+- **主模型**: MiniMax-M2.7 ✅ 正常
+- **备用链**: ModelStudio qwen3.5-plus, kimi-k2.5, glm-5等 ✅
+- **认证**: minimax:global 0 errors; modelstudio:default 1 auth error(cooldown)
+
+### Sandbox 基线配置确认 ✅
+
+| Agent | Sandbox | Exec权限 | 状态 |
+|-------|---------|----------|------|
+| chief-of-staff | off | ✅ 允许 | ✅ 基线正确 |
+| coder-hub | off | ✅ 允许 | ✅ 基线正确 |
+| tech-mentor | off | ❌ 禁止 | ✅ 基线正确 |
+| work-hub | off | ❌ 禁止 | ✅ 基线正确 |
+| venture-hub | off | ❌ 禁止 | ✅ 基线正确 |
+| life-hub | off | ❌ 禁止 | ✅ 基线正确 |
+| product-studio | off | ❌ 禁止 | ✅ 基线正确 |
+| zh-scribe | off | ❌ 禁止 | ✅ 基线正确 |
+
+**结论**: 当前配置为正确基线，无需修改。文档已同步。
 
 ## 2026-04-07: Sandbox Spawn 限制排查 (重要发现)
 

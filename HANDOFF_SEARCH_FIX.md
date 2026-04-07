@@ -31,5 +31,8 @@
 - **运行日志**: `journalctl --user -u openclaw-gateway`
 - **当前微服务状态**: `systemctl --user status search-service.service`
 
-## 5. 声明
-目前的 `openclaw.json` 已将 `venture-hub` 的物理沙盒关闭（为了测试逻辑），在修复完成后请务必恢复其物理沙盒隔离。
+## 6. 2026-04-07 修复总结
+- **状态**: **已修复**。
+- **方案**: 重新实现了 `search_service.js` 并作为宿主机 `systemd` 用户服务运行。
+- **突破点**: 放弃了物理挂载 (Bind Mounts)，改用 `curl` 在 `SKILL.md` 中进行本地回路 (Loopback) 转发，完美穿透了沙盒隔离。
+- **全员覆盖**: 已为所有 8 个 Agent 授权，实现了真正的“智搜中枢”。

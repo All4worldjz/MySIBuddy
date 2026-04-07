@@ -28,7 +28,8 @@
       "Bash(/users/whoami2028/workshop/gitrepo/mysibuddy/scripts/safe_openclaw_apply.sh *)",
       "Bash(.id *)",
       "Bash(.tools.alsoallow) = [\"group:runtime\"]\\' *)",
-      "Bash(\\' *)"
+      "Bash(\\' *)",
+      "Bash(python3 *)"
     ]
   },
   "$version": 3

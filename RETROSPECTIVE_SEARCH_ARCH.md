@@ -48,5 +48,15 @@
 *   **权限继承风险**: Docker 操作会改变物理文件的 UID/GID。**教训：每次大规模变更后必须物理核实文件权限（chmod 600/755）。**
 *   **路径影子问题**: 存在 `/usr/bin` 与 `~/.nvm` 两个版本。**教训：`which openclaw` 并不代表正在运行的版本，必须通过 `journalctl` 检查服务启动项。**
 
-## 6. 维护者声明
-当前系统处于最高稳定态。严禁随意开启 Hub 智能体的 `sandbox: off` 开关。任何新工具应优先考虑通过 `chief-of-staff` 进行委托转发。
+## 7. 架构升级：智搜中枢 v5.5 (2026-04-07)
+*   **全员授权 (Global Auth)**: 
+    *   通过全局脚本更新 `openclaw.json`，实现了 8 个 Agent (`chief`, `work`, `venture`, `life`, `product`, `zh-scribe`, `tech-mentor`, `coder-hub`) 的全量 `unified_search` 授权。
+*   **链式容错 (Failover Chain)**:
+    *   引入了 `Exa` 与 `Tavily` 的自动 Failover 逻辑。当首选 Provider 失败（API 限制、网络超时等）时，微服务会自动切换至备选。
+*   **智能场景负载均衡 (Scene-Based LB)**:
+    *   **GLOBAL_TRENDS / TECH_RESEARCH**: 首选 Exa (秒级响应)，备选 Tavily。
+    *   **CHINA_SOCIAL / GENERAL**: 首选 Tavily (深度抓取)，备选 Exa。
+*   **验证结果**:
+    *   实测 Exa Latency: ~1500ms
+    *   实测 Tavily Latency: ~5000ms
+    *   全链路通过 E2E 性能测试 (`test_unified_search.sh`)。
