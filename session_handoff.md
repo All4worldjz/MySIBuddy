@@ -1,14 +1,76 @@
 # Session Handoff
 
-Last updated: 2026-04-07 (全系统健康检查与基线确认)
+Last updated: 2026-04-07 (Tasks审计错误清理与系统健康检查)
 
 ## Current repo state
 
 - Branch: `dev`
 - Latest changes:
-  - **全系统健康检查完成**: 2026-04-07 20:32 GMT+8
-  - **基线配置确认**: Sandbox策略（全agents unsandbox + 工具权限收敛）确认为正确基线
-  - **文档同步**: QWEN.md、codex_handsoff.md 已同步实际配置
+  - **Tasks审计错误清理**: 10 errors → 0 errors ✅
+  - **Gateway性能优化**: 985ms → 35ms (重启后)
+  - **基线配置确认**: Sandbox策略确认为正确基线
+
+---
+
+## 2026-04-07: Tasks 审计错误清理 (重要经验)
+
+### 问题现象
+
+```
+Tasks audit: 25 findings · 10 errors · 15 warnings
+- stale_running: 6个任务卡住 (4h-15h不等)
+- lost: 2个任务 (backing session missing)
+- TaskFlow stale_running: 2个
+```
+
+### 尝试方案
+
+1. `openclaw tasks maintenance --apply` - 无法清理stale任务
+2. `openclaw tasks cancel <task_id>` - 报错 "Task runtime does not support cancellation yet"
+3. `openclaw tasks flow cancel <flow_id>` - 报错 "One or more child tasks are still active"
+4. **重启Gateway** - 任务持久化在SQLite中，重启无效
+
+### 成功方案：直接操作SQLite数据库
+
+```bash
+# 安装sqlite3工具
+sudo apt-get install -y sqlite3
+
+# 查看stale任务
+sqlite3 ~/.openclaw/tasks/runs.sqlite "SELECT task_id, status, runtime FROM task_runs WHERE status='running'"
+
+# 强制更新stale_running任务状态
+sqlite3 ~/.openclaw/tasks/runs.sqlite "UPDATE task_runs SET status='cancelled', error='Force cancelled: stale running task cleaned up by admin' WHERE status='running'"
+
+# 更新lost任务状态
+sqlite3 ~/.openclaw/tasks/runs.sqlite "UPDATE task_runs SET status='failed', error='backing session missing - cleaned up' WHERE status='lost'"
+
+# 更新TaskFlows
+sqlite3 ~/.openclaw/flows/registry.sqlite "UPDATE flow_runs SET status='cancelled' WHERE status='running'"
+
+# 清理missing_cleanup警告
+openclaw tasks maintenance --apply
+```
+
+### 修复结果
+
+| 指标 | 修复前 | 修复后 |
+|------|--------|--------|
+| Errors | 10 | **0** |
+| Warnings | 15 | 14 |
+| Running Tasks | 6 (stale) | **0** |
+
+### 关键经验
+
+1. **任务存储位置**:
+   - Tasks: `~/.openclaw/tasks/runs.sqlite`
+   - TaskFlows: `~/.openclaw/flows/registry.sqlite`
+
+2. **stale_running 根因**: 任务进程意外终止但数据库记录未更新
+
+3. **lost 根因**: backing session被清理但任务记录残留
+
+4. **预防措施**: 定期运行 `openclaw tasks audit` 检查，及时清理异常任务
 
 ---
 
@@ -30,11 +92,11 @@ Last updated: 2026-04-07 (全系统健康检查与基线确认)
 | 检查项 | 状态 | 详情 |
 |--------|------|------|
 | 版本 | ✅ | OpenClaw 2026.4.5 (stable) |
-| Gateway | ⚠️ | reachable 985ms (响应较慢) |
-| Agents | ✅ | 8 agents, 108 sessions |
+| Gateway | ✅ | reachable 35ms (重启后优化) |
+| Agents | ✅ | 8 agents, 109 sessions |
 | Channels | ✅ | Telegram 3账号OK, Feishu 2账号OK |
 | Memory | ⚠️ | dirty状态, 26 files, 175 chunks |
-| Tasks | ⚠️ | 10 audit errors, 15 audit warnings |
+| Tasks | ✅ | 0 errors (已清理), 14 warnings (时间戳不一致) |
 | Heartbeat | ⚠️ | 仅chief-of-staff活跃(30m), 其他7个disabled |
 
 ### Agent 拓扑确认
