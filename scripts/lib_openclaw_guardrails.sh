@@ -4,11 +4,6 @@ set -euo pipefail
 OPENCLAW_ROOT="${OPENCLAW_ROOT:-/home/admin/.openclaw}"
 OPENCLAW_CONFIG="${OPENCLAW_CONFIG:-$OPENCLAW_ROOT/openclaw.json}"
 OPENCLAW_SERVICE="${OPENCLAW_SERVICE:-openclaw-gateway}"
-EXPECTED_AGENTS=("chief-of-staff" "work-hub" "venture-hub" "life-hub" "product-studio" "zh-scribe" "tech-mentor" "devcopilot-hub")
-EXPECTED_TELEGRAM_ACCOUNTS=("chief" "mentor" "personal")
-EXPECTED_FEISHU_ACCOUNTS=("scribe" "work")
-EXPECTED_PLUGIN_ALLOW=("acpx" "browser" "duckduckgo" "exa" "kimi" "minimax" "openai" "openclaw-lark" "openclaw-weixin" "openshell" "tavily" "telegram" "unified-search")
-EXPECTED_PLUGIN_DENY=()
 
 log() {
   printf '[guardrail] %s\n' "$*"
@@ -39,11 +34,11 @@ path = sys.argv[1]
 d = json.load(open(path))
 errors = []
 
-expected_agents = ["chief-of-staff", "devcopilot-hub", "life-hub", "product-studio", "tech-mentor", "venture-hub", "work-hub", "zh-scribe"]
+expected_agents = ["chief-of-staff", "coder-hub", "life-hub", "product-studio", "tech-mentor", "venture-hub", "work-hub", "zh-scribe"]
 expected_telegram = ["chief", "mentor", "personal"]
 expected_feishu = ["scribe", "work"]
-expected_allow = ["acpx", "browser", "duckduckgo", "exa", "kimi", "minimax", "openai", "openclaw-lark", "openclaw-weixin", "openshell", "tavily", "telegram", "unified-search"]
-expected_deny = []
+expected_allow = ["duckduckgo", "minimax", "openai", "openclaw-lark", "qwen", "telegram"]
+expected_deny = ["feishu"]
 
 agents = [a.get("id") for a in d.get("agents", {}).get("list", [])]
 if sorted(agents) != sorted(expected_agents):
@@ -52,11 +47,11 @@ if sorted(agents) != sorted(expected_agents):
 plugins = d.get("plugins", {})
 if sorted(plugins.get("allow", [])) != sorted(expected_allow):
     errors.append(f"plugins.allow mismatch: {plugins.get('allow')}")
-if plugins.get("deny") != expected_deny:
+if sorted(plugins.get("deny", [])) != sorted(expected_deny):
     errors.append(f"plugins.deny mismatch: {plugins.get('deny')}")
 
 channels = d.get("channels", {})
-if sorted(channels.keys()) != ["feishu", "openclaw-weixin", "telegram"]:
+if sorted(channels.keys()) != ["feishu", "telegram"]:
     errors.append(f"channels mismatch: {list(channels.keys())}")
 
 telegram_accounts = list(channels.get("telegram", {}).get("accounts", {}).keys())
@@ -73,14 +68,12 @@ if "default" in feishu.get("accounts", {}):
     errors.append("channels.feishu.accounts.default must not exist")
 
 bindings = d.get("bindings", [])
-if len(bindings) != 8:
+if len(bindings) != 7:
     errors.append(f"bindings count mismatch: {len(bindings)}")
 
 tools = d.get("tools", {})
 if tools.get("profile") != "full":
     errors.append(f"tools.profile mismatch: {tools.get('profile')}")
-if tools.get("sessions", {}).get("visibility") != "all":
-    errors.append(f"tools.sessions.visibility mismatch: {tools.get('sessions', {}).get('visibility')}")
 
 agent_to_agent = tools.get("agentToAgent", {})
 if agent_to_agent.get("enabled") is not True:
@@ -98,7 +91,7 @@ if not chief:
     errors.append("chief-of-staff missing")
 else:
     allowed = chief.get("subagents", {}).get("allowAgents", [])
-    required = ["work-hub", "venture-hub", "life-hub", "product-studio", "zh-scribe", "tech-mentor", "devcopilot-hub"]
+    required = ["coder-hub", "life-hub", "product-studio", "tech-mentor", "venture-hub", "work-hub", "zh-scribe"]
     missing = [x for x in required if x not in allowed]
     if missing:
         errors.append(f"chief-of-staff.subagents.allowAgents missing: {missing}")

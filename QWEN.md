@@ -8,7 +8,7 @@
 
 ### 核心架构
 
-**7 智能体集群：**
+**8 智能体集群：**
 | Agent | 角色 | 主责域 | 渠道入口 |
 |-------|------|--------|----------|
 | `chief-of-staff` | 编排器 | 跨域统筹、审批、系统维护 | Telegram chief |
@@ -18,6 +18,7 @@
 | `product-studio` | 产品设计 | PRD、产品设计（后台specialist） | 无直接入口 |
 | `zh-scribe` | 中文成文 | 公众号全流程、中文成文、读书笔记 | Feishu scribe |
 | `tech-mentor` | AI导师 | 技术选型、科技学习、前沿跟踪 | Telegram mentor |
+| `coder-hub` | 编程助手 | 编程、代码生成与分析、CLI调用 | 无直接入口 (仅限内部调用) |
 
 **通信渠道：**
 - Telegram：3 个账号（`chief`、`personal`、`mentor`）
@@ -27,7 +28,7 @@
 - 主提供商：MiniMax（`minimax/MiniMax-M2.7`）
 - 备用提供商：阿里云百炼 ModelStudio（`modelstudio/qwen3.5-plus`、`modelstudio/kimi-k2.5` 等）
 - 所有智能体共享相同的主模型和备用链
-- **注意**：不再使用 Google Gemini，相关 gemini-proxy 子项目保留为参考代码
+- **注意**：不再使用 Google Gemini
 
 **系统安全加固（2026-04-06 完成）：**
 - SSH：禁用 root 登录、禁用密码认证（仅密钥登录）
@@ -42,7 +43,6 @@
 - `codex_handsoff.md`：权威部署手册，用于在新环境重建完整 OpenClaw 拓扑
 - `AGENTS.md`：仓库级 AI 智能体操作规则（变更顺序、备份纪律、人机协作规范）
 - `session_handoff.md`：生产变更日志和当前状态记录
-- `GEMINI.md`：历史参考文档（Gemini 模型配置设计，当前未在生产使用）
 
 ### 防护脚本（`scripts/`）
 - `safe_openclaw_validate.sh`：验证候选配置（JSON 语法 + 拓扑检查）
@@ -57,10 +57,6 @@
 - **功能**：备份远程服务器的 agents 配置、记忆文件、系统 JSON 配置
 - **用法**：`./scripts/backup_openclaw_config.sh [--config|--memory|--system|--all|--dry-run]`
 
-### 子项目（`gemini-proxy/`）
-- **状态**：参考代码，未在生产环境部署
-- OpenAI 兼容的 Gemini API 代理服务设计，端口 `8787`
-- 使用 Google OAuth 认证访问 Gemini 模型
 
 ---
 
@@ -147,7 +143,7 @@ ssh admin@47.82.234.46 'free -h | grep Swap'
 ## 配置约束
 
 ### 智能体拓扑
-必须精确包含 7 个智能体：`chief-of-staff`, `work-hub`, `venture-hub`, `life-hub`, `product-studio`, `zh-scribe`, `tech-mentor`
+必须精确包含 8 个智能体：`chief-of-staff`, `work-hub`, `venture-hub`, `life-hub`, `product-studio`, `zh-scribe`, `tech-mentor`, `coder-hub`
 
 ### 插件策略
 ```json
@@ -172,15 +168,15 @@ ssh admin@47.82.234.46 'free -h | grep Swap'
     "sessions": { "visibility": "all" },
     "agentToAgent": {
       "enabled": true,
-      "allow": ["chief-of-staff", "work-hub", "venture-hub", "life-hub", "product-studio", "zh-scribe", "tech-mentor"]
+      "allow": ["chief-of-staff", "work-hub", "venture-hub", "life-hub", "product-studio", "zh-scribe", "tech-mentor", "coder-hub"]
     }
   }
 }
 ```
 
-### Sandbox 配置（待专题研究）
-- 当前状态：所有智能体 `sandbox.mode = "off"`
-- 计划：后续专题研究分层 Sandbox（Chief: off, Hubs: all）
+### Sandbox 配置（已分层安全隔离）
+- `chief-of-staff` / `coder-hub`：`sandbox.mode = "off"`（允许系统级访问）
+- 6个 Hub 智能体：`sandbox.mode = "all"`（全面沙盒隔离防注入）
 
 ---
 

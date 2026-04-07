@@ -7,10 +7,12 @@ This is the authoritative runbook for rebuilding and migrating the MySiBuddy Ope
 Verified from remote host `admin@47.82.234.46`:
 
 - OpenClaw `2026.4.5`, system Node `24.13.0`
-- Agents: `chief-of-staff` (default/admin), 6 Hub Agents
+- Agents: `chief-of-staff` (default/admin), `coder-hub` (programming CLI), 6 Hub Agents
 - Channels: Telegram `3/3`, Feishu `2/2`
 - Security Architecture:
-  - All agents: `sandbox.mode = "off"` (待专题研究分层配置)
+  - `chief-of-staff` and `coder-hub`: `sandbox.mode = "off"` (Require local host access)
+  - 6 Hub Agents: `sandbox.mode = "all"` (Strict isolation)
+  - Tool Isolation: Only `chief-of-staff`, `work-hub`, `zh-scribe` have Feishu tool access. Only `tech-mentor` handles external web fetch delegation.
   - SSH: root login disabled, password auth disabled
   - Firewall: SSH(22) + ESTABLISHED + loopback only
   - Swap: 4GB configured
@@ -51,7 +53,7 @@ Execution contract:
 
 1. `safe_openclaw_validate.sh` checks JSON syntax plus current production topology.
 2. `safe_openclaw_apply.sh` creates a timestamped backup, copies the candidate into place, restarts `openclaw-gateway`, runs smoke checks, and auto-rolls back on failure.
-3. `safe_openclaw_smoke.sh` verifies `Telegram ON/OK`, `Feishu ON/OK`, `Agents = 7`, and absence of fatal drift signals in recent logs.
+3. `safe_openclaw_smoke.sh` verifies `Telegram ON/OK`, `Feishu ON/OK`, `Agents = 8`, and absence of fatal drift signals in recent logs.
 4. `safe_openclaw_rollback.sh` restores an explicit or latest backup and re-runs smoke validation.
 
 Do not bypass this flow with UI-driven `config.apply`, ad hoc JSON edits, or `openclaw doctor --fix`.
@@ -299,7 +301,7 @@ Hard rule for human-guided operations:
 ## 7. Final Validation Checklist
 
 1. `openclaw status --deep` shows Telegram `ON/OK` and Feishu `ON/OK`.
-2. `openclaw status --deep` shows 7 agents.
+2. `openclaw status --deep` shows 8 agents.
 3. Direct call to any agent uses `MiniMax-M2.7` as primary.
 4. Real Feishu `scribe` message lands in `agent:zh-scribe:feishu:...`.
 5. Real Telegram `mentor` message lands in `agent:tech-mentor:telegram:...`.

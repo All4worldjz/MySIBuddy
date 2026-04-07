@@ -35,13 +35,16 @@ MEMORY_BACKUP_DIR="${LOCAL_BASE}/agents-memory-backup-${BACKUP_DATE}"
 SYSTEM_BACKUP_DIR="${LOCAL_BASE}/openclaw-config-backup-${BACKUP_DATE}"
 
 # Agent列表
-AGENTS="chief-of-staff work-hub venture-hub life-hub product-studio zh-scribe tech-mentor"
+AGENTS="chief-of-staff work-hub venture-hub life-hub product-studio zh-scribe tech-mentor coder-hub"
 
 # 获取workspace名称（去掉后缀）
 get_workspace_name() {
     local agent="$1"
     case "$agent" in
         chief-of-staff) echo "chief" ;;
+        zh-scribe) echo "zh-scribe" ;;
+        tech-mentor) echo "tech-mentor" ;;
+        coder-hub) echo "coder" ;;
         *) echo "${agent%-*}" ;;  # 去掉 -hub, -studio 等后缀
     esac
 }

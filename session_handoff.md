@@ -49,9 +49,7 @@ Verified on remote host `admin@47.82.234.46` (OpenClaw 2026.4.5):
 |----------|-------|----------|-------|
 | 安全 | Sandbox分层未配置 | 专题研究 | 当前全部off，需研究Chief:off+Hubs:all |
 | 功能 | search-service 未部署 | 可选 | 文档提及但实际无部署 |
-| 功能 | gemini-proxy 未部署 | 参考保留 | 当前不使用 Gemini |
 | 功能 | Weixin 渠道未配置 | 可选 | 文档提及但实际无配置 |
-| 文档 | GEMINI.md 需更新 | 待执行 | 标记为历史参考 |
 
 ## Read this first next time
 

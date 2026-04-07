@@ -100,10 +100,11 @@ Channel and role intent:
 - `work` Feishu account -> `work-hub`
 - `scribe` Feishu account -> `zh-scribe`
 
-Model intent:
+Model intent (2026-04-06 实际配置):
 
-- `zh-scribe` primary must be `minimax/MiniMax-M2.7`
-- `tech-mentor` primary must be `google/gemini-3.1-flash-lite-preview`
+- All agents primary: `minimax/MiniMax-M2.7`
+- Fallback chain: `modelstudio/qwen3.5-plus`, `modelstudio/glm-5`, `modelstudio/kimi-k2.5`
+- **Note**: Google Gemini is NOT configured
 
 ## One-Pass Production Baseline
 
@@ -270,7 +271,10 @@ cp /home/admin/.openclaw/agents/chief-of-staff/agent/models.json /home/admin/.op
 
 Do not assume new agents inherit model credentials automatically.
 
-## Gemini Multi-Key Rule
+## Gemini Multi-Key Rule (Historical Reference - NOT CURRENTLY USED)
+
+> **⚠️ Note**: Google Gemini is NOT configured in current production. This section is preserved for reference only.
+> Current provider: MiniMax (`minimax/MiniMax-M2.7`) with ModelStudio fallbacks.
 
 Treat Gemini multi-key as a provider-auth design, not as a model-name trick.
 
@@ -340,7 +344,7 @@ Fast triage:
 
 - `No API key found for provider "google"` usually means missing `agentDir/auth-profiles.json`, not a model-name problem
 - one agent failing while others succeed usually means that agent's auth files drifted
-- frequent fallback from Gemini to MiniMax is not success; it usually means the Google auth pool is degraded
+- frequent fallback from primary to fallback model is not success; it usually means the primary provider is degraded
 
 ## Feishu-Specific Lessons
 

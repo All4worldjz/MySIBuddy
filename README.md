@@ -25,7 +25,6 @@ MySiBuddy/
 ├── codex_handsoff.md          # 权威部署手册（重建系统必读）
 ├── AGENTS.md                  # 仓库级 AI 智能体操作规则
 ├── session_handoff.md         # 生产变更日志和当前状态
-├── GEMINI.md                  # 历史参考（Gemini 设计，当前未使用）
 ├── scripts/                   # 防护脚本
 │   ├── safe_openclaw_validate.sh
 │   ├── safe_openclaw_apply.sh
@@ -36,7 +35,6 @@ MySiBuddy/
 ├── skills/                    # 可复用技能
 │   ├── openclaw-plugin-channel-recovery/
 │   └── backup-openclaw/
-└── gemini-proxy/              # 参考代码（未在生产部署）
 ```
 
 ## 推荐入口
@@ -131,7 +129,5 @@ ssh admin@47.82.234.46 'free -h | grep Swap'
 
 ## 历史参考
 
-- `GEMINI.md`：Gemini 多密钥认证设计（当前生产未使用）
-- `gemini-proxy/`：Gemini API 代理参考代码（未部署）
 - `RETROSPECTIVE_SEARCH_ARCH.md`：搜索架构设计记录
 - `HANDOFF_SEARCH_FIX.md`：搜索修复历史

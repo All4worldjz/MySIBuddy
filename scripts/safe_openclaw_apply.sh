@@ -18,7 +18,7 @@ log "backup created: $BACKUP"
 
 cp "$CANDIDATE" "$OPENCLAW_CONFIG"
 if systemctl --user restart "$OPENCLAW_SERVICE"; then
-  sleep 4
+  sleep 20
 else
   log "restart failed, rolling back"
   "$SCRIPT_DIR/safe_openclaw_rollback.sh" "$BACKUP"

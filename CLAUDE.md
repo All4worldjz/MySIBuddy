@@ -24,9 +24,9 @@ The production system runs OpenClaw `2026.4.2` on host `admin@47.82.234.46`.
 - Weixin: one account
 
 **Model Routing:**
-- Primary provider: Google Gemini (multi-key failover via `google:primary`, `google:secondary`, `google:tertiary`)
-- Fallback: MiniMax
-- `zh-scribe` primary is `minimax/MiniMax-M2.7`
+- Primary provider: MiniMax (`minimax/MiniMax-M2.7`)
+- Fallback: Alibaba Cloud ModelStudio (`modelstudio/qwen3.5-plus`, `modelstudio/kimi-k2.5`)
+- **Note**: Google Gemini is NOT configured
 
 ## Production Commands
 
@@ -78,19 +78,6 @@ ssh -o BatchMode=yes admin@47.82.234.46 'openclaw status --deep'
 - `codex_handsoff.md`: Authoritative deployment handoff for rebuilding the system
 - `AGENTS.md`: Repository-level operating rules for AI agents
 - `skills/openclaw-plugin-channel-recovery/SKILL.md`: Full deployment and recovery runbook
-- `GEMINI.md`: Gemini model configuration and multi-key auth design
-
-## Subproject: gemini-proxy
-
-OpenAI-compatible proxy for Google Gemini via OAuth authentication. Runs on port `8787`.
-
-Key commands:
-```bash
-cd gemini-proxy && npm install      # Install dependencies
-npm start                           # Start proxy
-curl http://127.0.0.1:8787/health   # Health check
-```
-
 ## Definition of Done
 
 A task is complete only when:

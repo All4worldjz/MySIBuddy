@@ -1,7 +1,0 @@
-node_modules/
-.env
-.token_cache.json
-*.log
-.DS_Store
-._*
-temp/
