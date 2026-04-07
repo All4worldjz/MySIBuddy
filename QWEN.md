@@ -43,6 +43,7 @@
 - `codex_handsoff.md`：权威部署手册，用于在新环境重建完整 OpenClaw 拓扑
 - `AGENTS.md`：仓库级 AI 智能体操作规则（变更顺序、备份纪律、人机协作规范）
 - `session_handoff.md`：生产变更日志和当前状态记录
+- `docs/openclaw-secrets-configuration.md`：**密钥配置指南**（双层存储架构、SecretRef格式、排错经验）
 
 ### 防护脚本（`scripts/`）
 - `safe_openclaw_validate.sh`：验证候选配置（JSON 语法 + 拓扑检查）
@@ -97,6 +98,29 @@ ssh admin@47.82.234.46 'ls -la /home/admin/.openclaw/*.json.pre-*'
 ssh admin@47.82.234.46 'grep -E "^PermitRootLogin|^PasswordAuthentication" /etc/ssh/sshd_config'
 ssh admin@47.82.234.46 'sudo iptables -L INPUT -n'
 ssh admin@47.82.234.46 'free -h | grep Swap'
+```
+
+### 密钥管理
+
+```bash
+# 审计密钥配置状态
+ssh admin@47.82.234.46 'openclaw secrets audit'
+
+# 重新加载密钥配置
+ssh admin@47.82.234.46 'openclaw secrets reload'
+
+# 检查密钥文件权限
+ssh admin@47.82.234.46 'ls -la /home/admin/.openclaw/runtime-secrets.json /home/admin/.openclaw/gateway.env'
+
+# 检查 systemd 服务环境变量配置
+ssh admin@47.82.234.46 'systemctl --user show openclaw-gateway | grep EnvironmentFile'
+
+# 检查明文密钥泄露
+ssh admin@47.82.234.46 'grep -r "sk-cp-\|sk-sp-\|AAG\|AIza" /home/admin/.openclaw/ --include="*.json" --exclude-dir=backup'
+
+# Gateway 服务管理
+ssh admin@47.82.234.46 'systemctl --user restart openclaw-gateway'
+ssh admin@47.82.234.46 'journalctl --user -u openclaw-gateway -n 30 --no-pager'
 ```
 
 ### 配置备份（本地仓库）
@@ -174,9 +198,31 @@ ssh admin@47.82.234.46 'free -h | grep Swap'
 }
 ```
 
-### Sandbox 配置（已分层安全隔离）
-- `chief-of-staff` / `coder-hub`：`sandbox.mode = "off"`（允许系统级访问）
-- 6个 Hub 智能体：`sandbox.mode = "all"`（全面沙盒隔离防注入）
+### Sandbox 配置（2026-04-07 更新：工具权限收敛策略）
+
+**所有 agents 移除沙盒限制**，通过工具权限控制实现安全隔离：
+
+| Agent | Sandbox | Exec 权限 | 说明 |
+|-------|---------|-----------|------|
+| `chief-of-staff` | off | ✅ 允许 | 编排器，需要系统级访问 |
+| `coder-hub` | off | ✅ 允许 | 编程助手，需要 CLI 访问（gemini/qwen CLI） |
+| `tech-mentor` | off | ❌ 禁止 | AI导师，需 spawn coder-hub |
+| `work-hub` | off | ❌ 禁止 | 工作中枢 |
+| `venture-hub` | off | ❌ 禁止 | 创业中枢 |
+| `life-hub` | off | ❌ 禁止 | 生活中枢 |
+| `product-studio` | off | ❌ 禁止 | 产品设计 |
+| `zh-scribe` | off | ❌ 禁止 | 中文成文 |
+
+**配置示例**：
+```json
+{
+  "id": "tech-mentor",
+  "sandbox": { "mode": "off" },
+  "tools": { "deny": ["exec", "process"] }
+}
+```
+
+**原因**: OpenClaw 安全限制阻止 sandboxed agent spawn unsandboxed subagent。详见 `docs/troubleshooting_sandbox_spawn.md`。
 
 ---
 
@@ -208,6 +254,25 @@ ssh admin@47.82.234.46 'free -h | grep Swap'
 ### 新智能体认证缺失
 - 新建智能体目录后，如果没有复制 `auth-profiles.json` 和 `models.json`，会导致所有模型报认证错误
 - **解决**：从现有智能体（如 `chief-of-staff`）复制这两个文件
+
+### 密钥存储双层机制（2026-04-07 发现）
+- OpenClaw 使用**双层密钥解析**：进程启动时需要环境变量，运行时需要 SecretRef 解析
+- **问题**：只配置 `runtime-secrets.json` 而不配置 `gateway.env`，会导致 Gateway 启动失败
+- **错误日志**：`Environment variable "MODELSTUDIO_API_KEY" is missing or empty`
+- **解决**：同时维护 `runtime-secrets.json` 和 `gateway.env`，并配置 systemd 的 `EnvironmentFile`
+
+### SecretRef id 格式错误
+- `openclaw.json` 中的 SecretRef 对象 `id` 字段必须以 `/` 开头（绝对 JSON 指针格式）
+- **错误示例**：`"id": "OPENCLAW_GATEWAY_TOKEN"`（缺少 `/` 前缀）
+- **正确示例**：`"id": "/OPENCLAW_GATEWAY_TOKEN"`
+- **错误日志**：`File secret reference id must be an absolute JSON pointer`
+
+### Sandbox Spawn 限制（2026-04-07 发现）
+- **硬性约束**：sandboxed agent 不能 spawn unsandboxed subagent
+- **错误日志**：`Sandboxed sessions cannot spawn unsandboxed subagents. Set a sandboxed target agent or use the same agent runtime.`
+- **原因**：OpenClaw 安全设计，防止沙盒逃逸
+- **解决方案**：将所有 agents 设为 unsandboxed，通过 `tools.deny` 禁止非编程 agents 的 exec 权限
+- **详细记录**：`docs/troubleshooting_sandbox_spawn.md`
 
 ---
 

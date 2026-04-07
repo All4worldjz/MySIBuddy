@@ -9,7 +9,7 @@
 | 服务器 | `admin@47.82.234.46` |
 | OpenClaw | `2026.4.5` |
 | Node.js | `24.13.0` |
-| 智能体 | 7 个（chief-of-staff + 6 hubs） |
+| 智能体 | 8 个（chief-of-staff + coder-hub + 6 hubs） |
 | 渠道 | Telegram 3账号 + Feishu 2账号 |
 
 ## 分支策略
@@ -49,17 +49,18 @@ MySiBuddy/
 
 ## 核心架构
 
-### 智能体拓扑（7个）
+### 智能体拓扑（8个）
 
-| Agent | 角色 | 渠道入口 |
-|-------|------|----------|
-| `chief-of-staff` | 编排器 | Telegram chief |
-| `work-hub` | 工作中枢 | Feishu work |
-| `venture-hub` | 创业中枢 | Telegram personal (群组) |
-| `life-hub` | 生活中枢 | Telegram personal |
-| `product-studio` | 产品设计 | 无直接入口 |
-| `zh-scribe` | 中文成文 | Feishu scribe |
-| `tech-mentor` | AI导师 | Telegram mentor |
+| Agent | 角色 | 渠道入口 | Exec 权限 |
+|-------|------|----------|-----------|
+| `chief-of-staff` | 编排器 | Telegram chief | ✅ |
+| `coder-hub` | 编程助手 | 内部调用 | ✅ |
+| `work-hub` | 工作中枢 | Feishu work | ❌ |
+| `venture-hub` | 创业中枢 | Telegram personal (群组) | ❌ |
+| `life-hub` | 生活中枢 | Telegram personal | ❌ |
+| `product-studio` | 产品设计 | 无直接入口 | ❌ |
+| `zh-scribe` | 中文成文 | Feishu scribe | ❌ |
+| `tech-mentor` | AI导师 | Telegram mentor | ❌ |
 
 ### 模型路由
 
@@ -68,7 +69,7 @@ MySiBuddy/
 | MiniMax (`MiniMax-M2.7`) | 主模型 |
 | ModelStudio (`qwen3.5-plus`, `kimi-k2.5`) | 备用模型 |
 
-### 安全配置（2026-04-06 完成）
+### 安全配置（2026-04-07 更新）
 
 | 措施 | 状态 |
 |------|------|
@@ -76,6 +77,8 @@ MySiBuddy/
 | SSH 密码认证 | 已禁用（仅密钥） |
 | 防火墙 | SSH(22) + 已建立连接 + 本地回环 |
 | Swap | 4GB |
+| Sandbox | 所有 agents 移除沙盒，通过工具权限控制安全 |
+| Exec 权限 | 仅 chief-of-staff 和 coder-hub 允许 |
 
 ## 运维命令
 
@@ -118,6 +121,11 @@ ssh admin@47.82.234.46 'free -h | grep Swap'
 ```
 
 ## 已知陷阱
+
+### Sandbox Spawn 限制（2026-04-07 发现）
+- **硬性约束**：sandboxed agent 不能 spawn unsandboxed subagent
+- **解决**：所有 agents 移除沙盒，通过 `tools.deny` 禁止非编程 agents 的 exec 权限
+- **详细记录**：`docs/troubleshooting_sandbox_spawn.md`
 
 ### 配置损坏事件（2026-04-01 历史）
 - `config.apply` 曾覆盖 `openclaw.json` 为不完整对象

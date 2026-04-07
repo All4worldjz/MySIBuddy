@@ -101,6 +101,14 @@ for needle in ("*** Begin Patch", "description:"):
     if needle in raw:
         errors.append(f"dangerous non-config content present: {needle}")
 
+# Generic secret scanning (sk- patterns)
+import re
+raw = open(path, "r", encoding="utf-8").read()
+if re.search(r'sk-[a-zA-Z0-9_-]{20,}', raw):
+    errors.append("potential hardcoded API key (sk-...) detected in config")
+if re.search(r'w7FyvZTSBB8nT5EUSbxB4GiG56J-7n58XjA5M5Z3nec', raw):
+    errors.append("potential hardcoded device token detected in config")
+
 if errors:
     for item in errors:
         print(f"FAIL {item}")

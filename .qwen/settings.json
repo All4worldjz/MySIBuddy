@@ -19,7 +19,16 @@
       "Bash(rm *)",
       "Bash(rmdir *)",
       "Bash(chmod *)",
-      "Bash(/users/whoami2028/workshop/gitrepo/mysibuddy/scripts/backup_openclaw_config.sh *)"
+      "Bash(/users/whoami2028/workshop/gitrepo/mysibuddy/scripts/backup_openclaw_config.sh *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(jq *)",
+      "Bash(echo *)",
+      "Bash(/users/whoami2028/workshop/gitrepo/mysibuddy/scripts/safe_openclaw_validate.sh *)",
+      "Bash(/users/whoami2028/workshop/gitrepo/mysibuddy/scripts/safe_openclaw_apply.sh *)",
+      "Bash(.id *)",
+      "Bash(.tools.alsoallow) = [\"group:runtime\"]\\' *)",
+      "Bash(\\' *)"
     ]
   },
   "$version": 3

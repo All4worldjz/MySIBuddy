@@ -1,58 +1,72 @@
 # Session Handoff
 
-Last updated: 2026-04-06 (健康检查与安全加固 Session)
+Last updated: 2026-04-07 (Sandbox Spawn 限制排查与安全策略调整)
 
 ## Current repo state
 
 - Branch: `dev`
-- Latest commit: 记录本次系统健康检查与安全加固
-- Key changes:
-  - **安全加固完成**: SSH禁用root/密码认证、防火墙规则、4GB Swap
-  - **幽灵目录清理**: devcopilot-hub 已删除
-  - **文档同步**: QWEN.md、codex_handsoff.md 已更新反映实际配置
-  - **Sandbox分层**: 暂不配置，后续专题研究
+- Latest changes:
+  - **Sandbox 策略调整**: 移除所有 agents 的沙盒限制，改用工具权限收敛策略
+  - **安全模型**: 仅 `chief-of-staff` 和 `coder-hub` 保留 exec 权限，其他 6 个 Hub agents 禁止 exec/process
+  - **排错记录**: 新增 `docs/troubleshooting_sandbox_spawn.md` 记录 Sandbox Spawn 限制问题
 
-## Current production state
+## 2026-04-07: Sandbox Spawn 限制排查 (重要发现)
 
-Verified on remote host `admin@47.82.234.46` (OpenClaw 2026.4.5):
+### 问题
 
-- `openclaw-gateway` running (Version: **2026.4.5**)
-- `Channels`: Telegram (3/3), Feishu (2/2) — all **ON / OK**
-- `Agents`: 7 agents (chief-of-staff + 6 hubs)
-- `Memory`: 57MB total, fts ready
-- `Model routing`: MiniMax-M2.7 (primary) + modelstudio fallbacks
+tech-mentor 无法 spawn coder-hub，返回错误：
+```
+Sandboxed sessions cannot spawn unsandboxed subagents.
+```
 
-**Security Hardening (2026-04-06 Completed):**
-| Measure | Status | Verification |
-|---------|--------|--------------|
-| SSH root login | `PermitRootLogin no` | ✅ Verified |
-| SSH password auth | `PasswordAuthentication no` | ✅ Verified |
-| Firewall | SSH(22)+ESTABLISHED+lo+DROP | ✅ Verified, persisted |
-| Swap | 4GB swapfile | ✅ Verified |
+### 根本原因
 
-**Configuration Notes:**
-- Sandbox: all agents `sandbox.mode = "off"` (待专题研究)
-- Provider: MiniMax + modelstudio (无 Google Gemini)
-- Feishu `accounts.default`: harmless (无 appId/appSecret)
+OpenClaw 安全设计限制：**sandboxed agent 不能 spawn unsandboxed subagent**，以防止沙盒逃逸。
 
-## What happened in this session
+### 解决方案
 
-1. **Full Health Check**: 执行系统级和 OpenClaw 系统健康检查，识别安全、功能、文档偏差问题
-2. **Phase 1 Security Hardening**: 完成 SSH加固、防火墙配置、Swap配置
-3. **Phase 2 Documentation Sync**: 更新 QWEN.md、codex_handsoff.md 反映实际配置状态
-4. **Ghost Directory Cleanup**: 删除 devcopilot-hub 幽灵目录
-5. **Feishu default Analysis**: 确认 accounts.default 无影响，保持不动
+采用**全局 unsandbox + 工具权限收敛**策略：
 
-## Identified issues (for future action)
+| Agent | Sandbox | Exec 权限 |
+|-------|---------|-----------|
+| chief-of-staff | off | ✅ 允许 |
+| coder-hub | off | ✅ 允许 |
+| tech-mentor | off | ❌ 禁止 |
+| work-hub | off | ❌ 禁止 |
+| venture-hub | off | ❌ 禁止 |
+| life-hub | off | ❌ 禁止 |
+| product-studio | off | ❌ 禁止 |
+| zh-scribe | off | ❌ 禁止 |
 
-| Category | Issue | Priority | Notes |
-|----------|-------|----------|-------|
-| 安全 | Sandbox分层未配置 | 专题研究 | 当前全部off，需研究Chief:off+Hubs:all |
-| 功能 | search-service 未部署 | 可选 | 文档提及但实际无部署 |
-| 功能 | Weixin 渠道未配置 | 可选 | 文档提及但实际无配置 |
+### 相关文件
+
+- `docs/troubleshooting_sandbox_spawn.md`: 完整排错记录
+- `QWEN.md`: 已更新 Sandbox 配置策略
+- `codex_handsoff.md`: 已更新安全架构说明
+
+---
+
+## 2026-04-07: 全系统安全固化与 Sandbox 闭环 (里程碑)
+
+- **系统拓扑**: 8 Agents (`chief-of-staff`, `work-hub`, `venture-hub`, `life-hub`, `product-studio`, `zh-scribe`, `tech-mentor`, `coder-hub`)
+- **渠道状态**: Telegram/Feishu 通信正常
+- **安全底座**: Docker 引擎就绪，Sandbox 策略已调整为工具权限收敛
+
+## 2026-04-07: Docker Sandbox Permission Troubleshooting
+
+- **Issue**: Agents with `sandbox.mode: "all"` were failing with `permission denied` to `/var/run/docker.sock`.
+- **Root Cause**: `admin` user was added to `docker` group, but the `systemd --user` session manager had not picked up the new group membership.
+- **Action**:
+  - Restored sandbox configuration.
+  - Documented resolution path in `docs/troubleshooting_docker_sandbox.md`.
+  - Recommended full system reboot to refresh user session context.
+- **Next steps after reboot**: Verify agents with `openclaw status --deep` and `docker ps` to ensure containers are starting.
+
+---
 
 ## Read this first next time
 
 1. `codex_handsoff.md`: 生产实际配置和运维手册
-2. `QWEN.md`: 项目概述和职能边界
-3. `session_handoff.md`: 最新变更日志
+2. `docs/troubleshooting_sandbox_spawn.md`: **新增** - Sandbox Spawn 限制排错指南
+3. `QWEN.md`: 项目概述和职能边界 (已更新 Sandbox 策略)
+4. `session_handoff.md`: 最新变更日志

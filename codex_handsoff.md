@@ -2,16 +2,18 @@
 
 This is the authoritative runbook for rebuilding and migrating the MySiBuddy OpenClaw system.
 
-## 1. Production Reality (Verified 2026-04-06)
+## 1. Production Reality (Verified 2026-04-07)
 
 Verified from remote host `admin@47.82.234.46`:
 
 - OpenClaw `2026.4.5`, system Node `24.13.0`
 - Agents: `chief-of-staff` (default/admin), `coder-hub` (programming CLI), 6 Hub Agents
 - Channels: Telegram `3/3`, Feishu `2/2`
-- Security Architecture:
-  - `chief-of-staff` and `coder-hub`: `sandbox.mode = "off"` (Require local host access)
-  - 6 Hub Agents: `sandbox.mode = "all"` (Strict isolation)
+- Security Architecture (2026-04-07 Updated):
+  - **All agents**: `sandbox.mode = "off"` (removed sandbox isolation)
+  - **Tool permission control**: Only `chief-of-staff` and `coder-hub` have `exec` permission
+  - **Other 6 Hub agents**: `tools.deny = ["exec", "process"]` (cannot execute system commands)
+  - **Reason**: OpenClaw prevents sandboxed agents from spawning unsandboxed subagents. See `docs/troubleshooting_sandbox_spawn.md`.
   - Tool Isolation: Only `chief-of-staff`, `work-hub`, `zh-scribe` have Feishu tool access. Only `tech-mentor` handles external web fetch delegation.
   - SSH: root login disabled, password auth disabled
   - Firewall: SSH(22) + ESTABLISHED + loopback only

@@ -214,6 +214,7 @@ backup_config() {
     # 创建README
     if [ "$DRY_RUN" = false ]; then
         create_config_readme
+        redact_backup_secrets "$CONFIG_BACKUP_DIR"
     fi
 
     log_success "配置备份完成: ${total_files} 个 md 文件"
@@ -243,6 +244,7 @@ backup_memory() {
     # 创建README
     if [ "$DRY_RUN" = false ]; then
         create_memory_readme
+        redact_backup_secrets "$MEMORY_BACKUP_DIR"
     fi
 
     log_success "记忆备份完成: ${total_files} 个 md 文件"
@@ -320,8 +322,110 @@ backup_system() {
     # 创建README
     create_system_readme
     
+    # 执行脱敏处理
+    redact_backup_secrets "$SYSTEM_BACKUP_DIR"
+    
     local count=$(find "${SYSTEM_BACKUP_DIR}" -name "*.json" -type f 2>/dev/null | wc -l | tr -d ' ')
     log_success "系统配置备份完成: ${count} 个 json 文件"
+}
+
+redact_backup_secrets() {
+    local backup_dir="$1"
+    log_info "对备份数据执行脱敏处理 ($backup_dir)..."
+
+    # 定义待脱敏的模式 - 全覆盖密钥类型
+    # 1. API Keys (MiniMax, Bailian, OpenAI等)
+    local sk_pattern='sk-[a-zA-Z0-9_-]{20,}'
+    local minimax_pattern='sk-cp-[a-zA-Z0-9_-]{50,}'
+    local bailian_pattern='sk-sp-[a-zA-Z0-9]{32}'
+
+    # 2. Telegram Bot Tokens (格式: 数字:AAxxx)
+    local telegram_pattern='[0-9]{8,10}:AA[a-zA-Z0-9_-]{30,}'
+
+    # 3. Feishu App Secrets
+    local feishu_pattern='[A-Z][a-zA-Z0-9]{4}[A-Z][a-zA-Z0-9]{15,20}'
+
+    # 4. Google Gemini API Keys
+    local google_pattern='AIzaSy[a-zA-Z0-9_-]{30,}'
+
+    # 5. Gateway Tokens
+    local gateway_pattern='[a-f0-9]{40,50}'
+
+    # 6. Device Tokens
+    local device_token_pattern='w7FyvZTSBB8nT5EUSbxB4GiG56J-7n58XjA5M5Z3nec'
+
+    # 7. AccessToken in JSON
+    local access_token_pattern='"accessToken":\s*"[^"]*"'
+
+    # 8. apiKey fields with actual values (not ${VAR} references)
+    local apikey_value_pattern='"apiKey":\s*"[a-zA-Z0-9_-]{20,}"'
+
+    # 9. token fields with actual values (not ${VAR} references)
+    local token_value_pattern='"token":\s*"[a-zA-Z0-9_-]{20,}"'
+
+    # 10. .env 文件内容
+    local env_key_pattern='(MINIMAX_API_KEY|MODELSTUDIO_API_KEY|DASH_SCOPE_API_KEY|TELEGRAM_BOT_TOKEN|FEISHU_APP_SECRET|OPENCLAW_GATEWAY_TOKEN)=[a-zA-Z0-9_:_-]{20,}'
+
+    # 删除包含明文密钥的 .env 文件（完全删除，不备份）
+    find "$backup_dir" -type f -name ".env" -exec rm -f {} \; 2>/dev/null
+
+    # 使用 perl 进行替换（更可靠）
+    if command -v perl >/dev/null 2>&1; then
+        # API Keys
+        find "$backup_dir" -type f \( -name "*.json" -o -name "*.md" -o -name "*.env" -o -name "*.sh" \) -print0 2>/dev/null | \
+            xargs -0 perl -i -pe 's/sk-cp-[a-zA-Z0-9_-]{50,}/sk-cp-REDACTED/g' 2>/dev/null
+        find "$backup_dir" -type f \( -name "*.json" -o -name "*.md" -o -name "*.env" -o -name "*.sh" \) -print0 2>/dev/null | \
+            xargs -0 perl -i -pe 's/sk-sp-[a-zA-Z0-9]{32}/sk-sp-REDACTED/g' 2>/dev/null
+        find "$backup_dir" -type f \( -name "*.json" -o -name "*.md" -o -name "*.env" -o -name "*.sh" \) -print0 2>/dev/null | \
+            xargs -0 perl -i -pe 's/sk-[a-zA-Z0-9_-]{20,}/sk-REDACTED/g' 2>/dev/null
+
+        # Telegram Bot Tokens
+        find "$backup_dir" -type f \( -name "*.json" -o -name "*.md" -o -name "*.env" \) -print0 2>/dev/null | \
+            xargs -0 perl -i -pe 's/[0-9]{8,10}:AA[a-zA-Z0-9_-]{30,}/TELEGRAM-BOT-TOKEN-REDACTED/g' 2>/dev/null
+
+        # Feishu Secrets
+        find "$backup_dir" -type f \( -name "*.json" -o -name "*.md" -o -name "*.env" \) -print0 2>/dev/null | \
+            xargs -0 perl -i -pe 's/[A-Z][a-zA-Z0-9]{4}[A-Z][a-zA-Z0-9]{15,20}/FEISHU-SECRET-REDACTED/g' 2>/dev/null
+
+        # Google Gemini Keys
+        find "$backup_dir" -type f \( -name "*.json" -o -name "*.md" -o -name "*.env" \) -print0 2>/dev/null | \
+            xargs -0 perl -i -pe 's/AIzaSy[a-zA-Z0-9_-]{30,}/GOOGLE-API-KEY-REDACTED/g' 2>/dev/null
+
+        # Gateway Tokens (40+ hex chars)
+        find "$backup_dir" -type f \( -name "*.json" -o -name "*.md" -o -name "*.env" \) -print0 2>/dev/null | \
+            xargs -0 perl -i -pe 's/[a-f0-9]{40,50}/GATEWAY-TOKEN-REDACTED/g' 2>/dev/null
+
+        # JSON fields
+        find "$backup_dir" -type f -name "*.json" -print0 2>/dev/null | \
+            xargs -0 perl -i -pe 's/"accessToken":\s*"[^"]*"/"accessToken": "REDACTED"/g' 2>/dev/null
+        find "$backup_dir" -type f -name "*.json" -print0 2>/dev/null | \
+            xargs -0 perl -i -pe 's/"apiKey":\s*"[a-zA-Z0-9_-]{20,}"/"apiKey": "REDACTED"/g' 2>/dev/null
+        find "$backup_dir" -type f -name "*.json" -print0 2>/dev/null | \
+            xargs -0 perl -i -pe 's/"token":\s*"[a-zA-Z0-9_-]{20,}"/"token": "REDACTED"/g' 2>/dev/null
+
+        # Device Token
+        find "$backup_dir" -type f \( -name "*.json" -o -name "*.md" \) -print0 2>/dev/null | \
+            xargs -0 perl -i -pe 's/w7FyvZTSBB8nT5EUSbxB4GiG56J-7n58XjA5M5Z3nec/REDACTED-DEVICE-TOKEN/g' 2>/dev/null
+    else
+        # macOS/Linux sed fallback
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            find "$backup_dir" -type f \( -name "*.json" -o -name "*.md" -o -name "*.env" \) -exec sed -i '' -E 's/sk-[a-zA-Z0-9_-]{20,}/sk-REDACTED/g' {} + 2>/dev/null
+            find "$backup_dir" -type f \( -name "*.json" -o -name "*.md" -o -name "*.env" \) -exec sed -i '' -E 's/[0-9]{8,10}:AA[a-zA-Z0-9_-]{30,}/TELEGRAM-BOT-TOKEN-REDACTED/g' {} + 2>/dev/null
+            find "$backup_dir" -type f -name "*.json" -exec sed -i '' -E 's/"accessToken":\s*"[^"]*"/"accessToken": "REDACTED"/g' {} + 2>/dev/null
+        else
+            find "$backup_dir" -type f \( -name "*.json" -o -name "*.md" -o -name "*.env" \) -exec sed -i -E 's/sk-[a-zA-Z0-9_-]{20,}/sk-REDACTED/g' {} + 2>/dev/null
+            find "$backup_dir" -type f \( -name "*.json" -o -name "*.md" -o -name "*.env" \) -exec sed -i -E 's/[0-9]{8,10}:AA[a-zA-Z0-9_-]{30,}/TELEGRAM-BOT-TOKEN-REDACTED/g' {} + 2>/dev/null
+            find "$backup_dir" -type f -name "*.json" -exec sed -i -E 's/"accessToken":\s*"[^"]*"/"accessToken": "REDACTED"/g' {} + 2>/dev/null
+        fi
+    fi
+
+    # 验证脱敏结果
+    local remaining_secrets=$(grep -r "sk-cp-9jpw\|sk-sp-6518\|AAGPWO\|AAEkW9\|AAHLXe\|3AT1Hbyo\|Cs9Ds7\|AIzaSy" "$backup_dir" 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$remaining_secrets" -gt 0 ]; then
+        log_warn "警告: 发现 $remaining_secrets 处可能未脱敏的密钥，请手动检查"
+    else
+        log_success "脱敏处理完成，已验证无明文密钥残留"
+    fi
 }
 
 create_config_readme() {
@@ -388,11 +492,10 @@ create_system_readme() {
 - **远程服务器**：`admin@47.82.234.46`
 - **备份时间**：$(date '+%Y-%m-%d %H:%M:%S')
 
-## 已排除的敏感文件
+## 安全说明
 
-以下文件包含密钥，**未备份**：
-- `credentials/lark.secrets.json`
-- `runtime-secrets.json`
+- 包含密钥的敏感文件（`lark.secrets.json`, `runtime-secrets.json`）**未备份**。
+- 备份的所有 JSON 文件中包含的 API Key、AccessToken 和设备 Token 已通过脱敏处理（Redacted）。
 
 ## 恢复方法
 
