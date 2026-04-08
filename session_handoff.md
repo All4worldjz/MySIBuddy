@@ -1,12 +1,155 @@
 # Session Handoff
 
-Last updated: 2026-04-08 (智能体别名全局同步与文档更新)
+Last updated: 2026-04-09 (OpenClaw 升级至 2026.4.8)
 
 ## Current repo state
 
 - Branch: `dev`
 - Latest commit: `d4c5e41` - feat: 添加飞书网盘安全操作脚本和受保护文件夹配置
-- **新变更**：全系统智能体别名（Alias）映射同步
+- **新变更**：OpenClaw 升级 2026.4.5 → 2026.4.8
+
+---
+
+## 2026-04-09: OpenClaw 升级至 2026.4.8 (重要里程碑)
+
+### 升级概要
+
+| 项目 | 升级前 | 升级后 |
+|------|--------|--------|
+| **OpenClaw 版本** | 2026.4.5 | **2026.4.8** |
+| **Git commit** | 3e72c03 | **9ece252** |
+| **升级方式** | - | `sudo npm install -g openclaw@2026.4.8` |
+| **停机时间** | - | ~3 分钟 |
+
+### 升级原因
+
+v2026.4.8 修复了关键 bug：
+- **Telegram/setup**: 修复 secrets 加载问题，解决启动时找不到 bot token 的 bug
+- **Bundled Channels**: 修复 Feishu/Google/Matrix 等插件的打包加载问题
+- **Slack/actions**: 修复 SecretRef-backed bot token 读取问题
+
+### 升级流程（完整记录）
+
+```bash
+# Step 1: 创建备份目录
+BACKUP_DIR=~/.openclaw/backups/pre-upgrade-20260409
+mkdir -p $BACKUP_DIR
+
+# Step 2: 备份关键文件
+cp ~/.openclaw/openclaw.json $BACKUP_DIR/
+cp ~/.openclaw/runtime-secrets.json $BACKUP_DIR/
+cp ~/.openclaw/gateway.env $BACKUP_DIR/
+cp ~/.config/systemd/user/openclaw-gateway.service $BACKUP_DIR/
+cp -r ~/.openclaw/memory $BACKUP_DIR/
+cp -r ~/.openclaw/extensions/openclaw-lark $BACKUP_DIR/
+
+# Step 2.2: 备份 npm 包 (283MB)
+sudo tar -czf $BACKUP_DIR/openclaw-npm-2026.4.5.tar.gz -C /usr/lib/node_modules openclaw
+
+# Step 3: 停止所有 OpenClaw 服务
+systemctl --user stop openclaw-gateway
+systemctl --user stop search-service
+
+# Step 3.5: 确认无进程运行
+ps aux | grep openclaw  # 应无输出
+ss -tlnp | grep 18789   # 应无输出
+
+# Step 4: 升级 OpenClaw
+sudo npm install -g openclaw@2026.4.8
+
+# Step 5: 验证版本
+cat /usr/lib/node_modules/openclaw/package.json | grep '"version"'
+# 输出: "version": "2026.4.8"
+
+# Step 6: 更新 systemd 服务文件
+sed -i "s/v2026.4.5/v2026.4.8/g" ~/.config/systemd/user/openclaw-gateway.service
+sed -i "s/OPENCLAW_SERVICE_VERSION=2026.4.5/OPENCLAW_SERVICE_VERSION=2026.4.8/g" ~/.config/systemd/user/openclaw-gateway.service
+systemctl --user daemon-reload
+
+# Step 7: 启动 Gateway
+systemctl --user start openclaw-gateway
+systemctl --user start search-service
+
+# Step 8: 冒烟测试
+systemctl --user is-active openclaw-gateway  # active
+openclaw status --deep  # Channels OK
+```
+
+### 备份文件位置
+
+```
+~/.openclaw/backups/pre-upgrade-20260409/
+├── gateway.env              # 环境变量
+├── memory/                  # 记忆数据库 (44MB)
+├── npm-list.json            # npm 依赖快照
+├── openclaw-gateway.service # systemd 服务定义
+├── openclaw.json            # 主配置文件 (23KB)
+├── openclaw-lark/           # 飞书插件 (2026.4.1)
+├── openclaw-npm-2026.4.5.tar.gz  # 完整 npm 包备份 (283MB)
+├── runtime-secrets.json     # 密钥存储
+└── version.txt              # 升级前版本记录
+```
+
+### 回滚命令（如需要）
+
+```bash
+# 停止服务
+systemctl --user stop openclaw-gateway search-service
+
+# 恢复 npm 包
+sudo rm -rf /usr/lib/node_modules/openclaw
+sudo tar -xzf ~/.openclaw/backups/pre-upgrade-20260409/openclaw-npm-2026.4.5.tar.gz -C /usr/lib/node_modules
+
+# 恢复配置
+cp ~/.openclaw/backups/pre-upgrade-20260409/openclaw-gateway.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+
+# 启动服务
+systemctl --user start openclaw-gateway search-service
+```
+
+### 升级后验证
+
+| 检查项 | 状态 |
+|--------|------|
+| Gateway 运行 | ✅ active |
+| Telegram 渠道 | ✅ ON/OK (3 账号) |
+| 飞书渠道 | ✅ ON/OK (2 账号) |
+| Cron 任务 | ✅ 全部正常 |
+| 日志错误 | ✅ 无 error/warn |
+| 插件兼容 | ✅ openclaw-lark 2026.4.1 兼容 |
+
+### 同期修复问题
+
+升级过程中一并修复了以下问题：
+
+| 问题 | 操作 | 结果 |
+|------|------|------|
+| KM-Vault cron delivery 失败 | `accountId: work` → `mentor`, schedule `*/5` → `0 */12` | ✅ 状态变为 ok |
+| delivery-queue 积压 | 清理 24 个失败 JSON 文件 | ✅ 已清理 |
+| gateway.env 权限过宽 | `chmod 600` | ✅ 权限 600 |
+
+### 版本差异 (2026.4.5 → 2026.4.8)
+
+**v2026.4.8 修复内容：**
+- Telegram/setup: secrets 加载修复
+- Bundled Channels: 打包加载修复
+- Agents/progress: planTool 选项修复
+- Exec: host fallback 策略修复
+- Slack: proxy 配置支持
+- Network: DNS pinning 修复
+
+**v2026.4.7 新功能（包含在 2026.4.8）：**
+- `openclaw infer` 命令
+- Media Generation 自动路由
+- Memory Wiki 结构化知识管理
+- Webhooks ingress
+- Session checkpointing
+- Gemma 4 支持
+
+---
+
+## 2026-04-08: 智能体别名全局同步与文档更新
 
 - `GEMINI.md`: 架构表格新增 Alias 列
 - `README.md`: 核心架构表格新增别名列
