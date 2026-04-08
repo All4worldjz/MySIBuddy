@@ -1,0 +1,63 @@
+---
+# deploy-partial.yml - 分步部署 Playbook
+# 允许选择性部署特定组件
+# 使用 --tags 参数选择要部署的组件
+
+- name: 分步部署 OpenClaw
+  hosts: openclaw
+  become: true
+  roles:
+    - system-prep
+    - nodejs
+    - openclaw-core
+    - security-hardening
+    - openclaw-agents
+    - openclaw-channels
+    - secrets-templates
+  tags: always
+
+- name: 生成 OpenClaw 主配置（可选）
+  hosts: openclaw
+  become: true
+  become_user: "{{ openclaw_user }}"
+  tasks:
+    - name: 生成 openclaw.json
+      template:
+        src: "../templates/openclaw.json.j2"
+        dest: "{{ openclaw_config_file }}"
+        owner: "{{ openclaw_user }}"
+        group: "{{ openclaw_user }}"
+        mode: "0644"
+      tags: config
+
+    - name: 配置 systemd 服务
+      template:
+        src: "../templates/openclaw-gateway.service.j2"
+        dest: "/home/{{ openclaw_user }}/.config/systemd/user/{{ openclaw_systemd_service }}.service"
+        owner: "{{ openclaw_user }}"
+        group: "{{ openclaw_user }}"
+        mode: "0644"
+      notify: reload systemd daemon
+
+    - name: 重新加载 systemd
+      systemd:
+        daemon_reload: true
+        scope: user
+
+  handlers:
+    - name: reload systemd daemon
+      systemd:
+        daemon_reload: true
+        scope: user
+
+  tags: config
+
+- name: 部署后验证（可选）
+  hosts: openclaw
+  become: true
+  become_user: "{{ openclaw_user }}"
+  roles:
+    - post-deploy
+  tags:
+    - post-deploy
+    - validate

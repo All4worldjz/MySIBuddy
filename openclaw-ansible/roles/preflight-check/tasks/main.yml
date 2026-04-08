@@ -1,0 +1,263 @@
+---
+# preflight-check: 部署前置检查
+# 确保目标服务器满足最低资源要求
+# 检测现有环境，避免覆盖已有配置
+
+- name: 收集系统信息
+  setup:
+    gather_subset:
+      - min
+      - memory
+      - processors
+      - devices
+  tags: always
+
+# ============================================================
+# 资源检查
+# ============================================================
+- name: 检查内存 >= {{ min_memory_mb | default(4096) }}MB
+  fail:
+    msg: >
+      ❌ 内存不足！当前: {{ ansible_memory_mb.real.total }}MB, 
+      最低要求: {{ min_memory_mb | default(4096) }}MB
+      
+      建议: 升级 VPS 配置到至少 4GB 内存。
+  when: ansible_memory_mb.real.total < (min_memory_mb | default(4096))
+  tags:
+    - preflight
+    - resource-check
+
+- name: 检查 CPU 核心数 >= {{ min_cpu_cores | default(2) }}
+  fail:
+    msg: >
+      ❌ CPU 核心不足！当前: {{ ansible_processor_vcpus }} 核心,
+      最低要求: {{ min_cpu_cores | default(2) }} 核心
+      
+      建议: 升级 VPS 配置到至少 2 核心。
+  when: ansible_processor_vcpus < (min_cpu_cores | default(2))
+  tags:
+    - preflight
+    - resource-check
+
+- name: 检查磁盘空间 >= {{ min_disk_gb | default(50) }}GB
+  fail:
+    msg: >
+      ❌ 磁盘空间不足！当前: {{ (ansible_mounts | selectattr('mount', 'equalto', '/') | map(attribute='size_total') | first | int / 1073741824) | round(1) }}GB,
+      最低要求: {{ min_disk_gb | default(50) }}GB
+      
+      建议: 升级 VPS 存储到至少 50GB。
+  when: >
+    (ansible_mounts | selectattr('mount', 'equalto', '/') | map(attribute='size_available') | first | int)
+    < ((min_disk_gb | default(50)) * 1073741824)
+  tags:
+    - preflight
+    - resource-check
+
+- name: 显示资源检查通过
+  debug:
+    msg: >
+      ✅ 资源检查通过:
+      - 内存: {{ ansible_memory_mb.real.total }}MB
+      - CPU: {{ ansible_processor_vcpus }} 核心
+      - 磁盘可用: {{ (ansible_mounts | selectattr('mount', 'equalto', '/') | map(attribute='size_available') | first | int / 1073741824) | round(1) }}GB
+  tags:
+    - preflight
+    - resource-check
+
+# ============================================================
+# 系统兼容性检查
+# ============================================================
+- name: 检查操作系统兼容性
+  fail:
+    msg: >
+      ❌ 不支持的操作系统！
+      当前: {{ ansible_distribution }} {{ ansible_distribution_version }}
+      支持: Ubuntu 22.04/24.04, Debian 11/12, CentOS 9, Rocky/AlmaLinux 9
+      
+      请确认您的操作系统在支持列表中。
+  when: >
+    not (
+      (ansible_distribution == "Ubuntu" and ansible_distribution_version is match("^(22\\.04|24\\.04)$")) or
+      (ansible_distribution == "Debian" and ansible_distribution_version is match("^(11|12)")) or
+      (ansible_distribution == "CentOS" and ansible_distribution_version is match("^9")) or
+      (ansible_distribution == "Rocky" and ansible_distribution_version is match("^9")) or
+      (ansible_distribution == "AlmaLinux" and ansible_distribution_version is match("^9"))
+    )
+  tags:
+    - preflight
+    - compat-check
+
+- name: 显示系统兼容性通过
+  debug:
+    msg: "✅ 系统兼容: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+  tags:
+    - preflight
+    - compat-check
+
+# ============================================================
+# 网络检查
+# ============================================================
+- name: 检查 DNS 解析
+  command: nslookup api.telegram.org
+  register: dns_check
+  failed_when: false
+  changed_when: false
+  tags:
+    - preflight
+    - network-check
+
+- name: 警告 DNS 解析可能有问题
+  debug:
+    msg: >
+      ⚠️  DNS 解析测试失败，可能影响 Telegram/飞书连接。
+      请确认服务器网络正常。
+  when: dns_check.rc != 0
+  tags:
+    - preflight
+    - network-check
+
+- name: 检查关键端口占用
+  wait_for:
+    port: "{{ item }}"
+    timeout: 5
+    state: stopped
+    msg: "端口 {{ item }} 已被占用，请关闭相关服务后重试"
+  loop: "{{ preflight_check_ports | default([22]) }}"
+  tags:
+    - preflight
+    - network-check
+
+# ============================================================
+# 现有环境检测
+# ============================================================
+- name: 检查是否已安装 Node.js
+  command: node --version
+  register: existing_nodejs
+  failed_when: false
+  changed_when: false
+  tags:
+    - preflight
+    - existing-check
+
+- name: 检查是否已安装 OpenClaw
+  command: openclaw --version
+  register: existing_openclaw
+  failed_when: false
+  changed_when: false
+  tags:
+    - preflight
+    - existing-check
+
+- name: 检查是否存在 OpenClaw 配置
+  stat:
+    path: "{{ openclaw_config_dir | default('/home/admin/.openclaw') }}/openclaw.json"
+  register: existing_openclaw_config
+  tags:
+    - preflight
+    - existing-check
+
+- name: 检测现有环境摘要
+  debug:
+    msg: >
+      📋 现有环境检测:
+      {% if existing_nodejs.rc == 0 %}
+      - Node.js 已安装: {{ existing_nodejs.stdout }}
+      {% if nodejs_version not in existing_nodejs.stdout %}
+        ⚠️  版本不匹配（目标: v{{ nodejs_version }}）
+      {% endif %}
+      {% else %}
+      - Node.js: 未安装
+      {% endif %}
+      {% if existing_openclaw.rc == 0 %}
+      - OpenClaw 已安装: {{ existing_openclaw.stdout }}
+      {% if openclaw_version not in existing_openclaw.stdout %}
+        ⚠️  版本不匹配（目标: {{ openclaw_version }}）
+      {% endif %}
+      {% else %}
+      - OpenClaw: 未安装
+      {% endif %}
+      {% if existing_openclaw_config.stat.exists %}
+      - OpenClaw 配置: 已存在（将保留现有 Agent 配置）
+      {% else %}
+      - OpenClaw 配置: 不存在（将生成新配置）
+      {% endif %}
+  tags:
+    - preflight
+    - existing-check
+
+# ============================================================
+# Swap 检查
+# ============================================================
+- name: 检查是否已配置 Swap
+  command: swapon --show --noheadings
+  register: existing_swap
+  failed_when: false
+  changed_when: false
+  tags:
+    - preflight
+    - resource-check
+
+- name: 显示 Swap 状态
+  debug:
+    msg: >
+      {% if existing_swap.stdout | length > 0 %}
+      ✅ Swap 已配置: {{ existing_swap.stdout | regex_replace('\s+', ' ') }}
+      {% else %}
+      ℹ️  Swap 未配置（将在 security-hardening 角色中配置）
+      {% endif %}
+  tags:
+    - preflight
+    - resource-check
+
+# ============================================================
+# SSH 配置检查
+# ============================================================
+- name: 检查 SSH 密钥认证是否可用
+  command: ssh -o BatchMode=yes -o ConnectTimeout=5 localhost echo ok
+  register: ssh_key_check
+  failed_when: false
+  changed_when: false
+  when: security_hardening.ssh.disable_password_auth | default(false)
+  tags:
+    - preflight
+    - ssh-check
+
+- name: 警告 SSH 密钥认证不可用
+  debug:
+    msg: >
+      ⚠️  SSH 密钥认证测试失败！
+      如果继续部署并禁用密码认证，可能导致无法登录。
+      
+      建议:
+      1. 先配置 SSH 密钥: ssh-copy-id {{ ansible_user }}@{{ inventory_hostname }}
+      2. 测试密钥登录: ssh -o BatchMode=yes {{ ansible_user }}@{{ inventory_hostname }}
+      3. 确认成功后再运行部署
+  when:
+    - ssh_key_check is defined
+    - ssh_key_check.rc != 0
+  tags:
+    - preflight
+    - ssh-check
+
+# ============================================================
+# 预检通过报告
+# ============================================================
+- name: 显示预检通过报告
+  debug:
+    msg: |
+      ✅ 前置检查全部通过！
+      
+      📊 系统信息:
+      - 操作系统: {{ ansible_distribution }} {{ ansible_distribution_version }}
+      - 内核: {{ ansible_kernel }}
+      - 架构: {{ ansible_architecture }}
+      
+      💻 资源配置:
+      - CPU: {{ ansible_processor_vcpus }} 核心
+      - 内存: {{ ansible_memory_mb.real.total }}MB
+      - 磁盘可用: {{ (ansible_mounts | selectattr('mount', 'equalto', '/') | map(attribute='size_available') | first | int / 1073741824) | round(1) }}GB
+      
+      🚀 准备开始部署...
+  tags:
+    - preflight
+    - report

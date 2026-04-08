@@ -1,0 +1,219 @@
+---
+# deploy.yml - 完整部署 Playbook
+# 一键部署 OpenClaw 完整生产环境
+#
+# 用法:
+#   ansible-playbook playbooks/deploy.yml -i inventory/hosts.ini
+#
+# 分步部署:
+#   ansible-playbook playbooks/deploy.yml -i inventory/hosts.ini --tags preflight
+#   ansible-playbook playbooks/deploy.yml -i inventory/hosts.ini --tags system-prep
+#   ansible-playbook playbooks/deploy.yml -i inventory/hosts.ini --tags nodejs
+#   ansible-playbook playbooks/deploy.yml -i inventory/hosts.ini --tags openclaw
+#   ansible-playbook playbooks/deploy.yml -i inventory/hosts.ini --tags security
+#   ansible-playbook playbooks/deploy.yml -i inventory/hosts.ini --tags agents,channels,config
+#   ansible-playbook playbooks/deploy.yml -i inventory/hosts.ini --tags post-deploy
+
+# ============================================================
+# 阶段 0: 前置检查
+# ============================================================
+- name: 前置资源检查
+  hosts: openclaw
+  gather_facts: true
+  roles:
+    - preflight-check
+  tags:
+    - always
+    - preflight
+
+# ============================================================
+# 阶段 1: 系统准备
+# ============================================================
+- name: 系统准备
+  hosts: openclaw
+  become: true
+  roles:
+    - system-prep
+  tags:
+    - system-prep
+
+# ============================================================
+# 阶段 2: 安装 Node.js
+# ============================================================
+- name: 安装 Node.js
+  hosts: openclaw
+  become: true
+  roles:
+    - nodejs
+  tags:
+    - nodejs
+
+# ============================================================
+# 阶段 3: 安装 OpenClaw 核心
+# ============================================================
+- name: 安装 OpenClaw 核心
+  hosts: openclaw
+  become: true
+  become_user: "{{ openclaw_user }}"
+  roles:
+    - openclaw-core
+  tags:
+    - openclaw
+    - openclaw-core
+
+# ============================================================
+# 阶段 4: 安全加固
+# ============================================================
+- name: 安全加固
+  hosts: openclaw
+  become: true
+  roles:
+    - security-hardening
+  tags:
+    - security
+
+# ============================================================
+# 阶段 5: 配置 8 Agent 集群
+# ============================================================
+- name: 配置 8 Agent 集群
+  hosts: openclaw
+  become: true
+  become_user: "{{ openclaw_user }}"
+  roles:
+    - openclaw-agents
+  tags:
+    - agents
+
+# ============================================================
+# 阶段 6: 配置通信渠道
+# ============================================================
+- name: 配置通信渠道
+  hosts: openclaw
+  become: true
+  become_user: "{{ openclaw_user }}"
+  roles:
+    - openclaw-channels
+  tags:
+    - channels
+
+# ============================================================
+# 阶段 7: 生成密钥模板
+# ============================================================
+- name: 生成密钥模板
+  hosts: openclaw
+  become: true
+  become_user: "{{ openclaw_user }}"
+  roles:
+    - secrets-templates
+  tags:
+    - secrets
+
+# ============================================================
+# 阶段 8: 生成 OpenClaw 主配置（安全应用）
+# ============================================================
+- name: 生成 OpenClaw 主配置
+  hosts: openclaw
+  become: true
+  become_user: "{{ openclaw_user }}"
+  roles:
+    - openclaw-config
+  tags:
+    - config
+    - openclaw-json
+
+- name: 配置 systemd 服务
+  hosts: openclaw
+  become: true
+  tasks:
+    - name: 确保 systemd user 目录存在
+      file:
+        path: "/home/{{ openclaw_user }}/.config/systemd/user"
+        state: directory
+        owner: "{{ openclaw_user }}"
+        group: "{{ openclaw_user }}"
+        mode: "0755"
+
+    - name: 部署 Gateway systemd 服务
+      template:
+        src: "templates/openclaw-gateway.service.j2"
+        dest: "/home/{{ openclaw_user }}/.config/systemd/user/{{ openclaw_systemd_service }}.service"
+        owner: "{{ openclaw_user }}"
+        group: "{{ openclaw_user }}"
+        mode: "0644"
+      notify: reload systemd daemon
+
+    - name: 重新加载 systemd daemon
+      systemd:
+        daemon_reload: true
+        scope: user
+
+    - name: 启用 Gateway 服务（开机自启）
+      systemd:
+        name: "{{ openclaw_systemd_service }}"
+        scope: user
+        enabled: true
+        daemon_reload: false
+
+  handlers:
+    - name: reload systemd daemon
+      systemd:
+        daemon_reload: true
+        scope: user
+
+  tags:
+    - config
+    - systemd
+
+# ============================================================
+# 阶段 9: 部署后验证
+# ============================================================
+- name: 部署后验证
+  hosts: openclaw
+  become: true
+  become_user: "{{ openclaw_user }}"
+  roles:
+    - post-deploy
+  tags:
+    - post-deploy
+    - validate
+
+# ============================================================
+# 部署完成报告
+# ============================================================
+- name: 部署完成报告
+  hosts: openclaw
+  tasks:
+    - name: 显示部署完成消息
+      debug:
+        msg: |
+          🎉 OpenClaw 部署完成！
+
+          📋 下一步操作：
+
+          1️⃣  配置密钥（必须）:
+             ssh {{ openclaw_user }}@{{ inventory_hostname }}
+             vim {{ openclaw_config_dir }}/runtime-secrets.json
+             vim {{ openclaw_config_dir }}/gateway.env
+
+          2️⃣  重启 Gateway:
+             systemctl --user restart {{ openclaw_systemd_service }}
+
+          3️⃣  验证部署:
+             openclaw status --deep
+             openclaw secrets audit
+
+          4️⃣  查看部署报告:
+             cat /tmp/openclaw-deployment-report-{{ ansible_date_time.date }}.md
+
+          📚 文档:
+             - README.md
+             - QUICKSTART.md
+             - docs/troubleshooting.md
+
+          ⚠️  重要提示:
+             - 密钥文件权限已设置为 600
+             - 配置备份已自动创建
+             - 如需回滚: ansible-playbook playbooks/rollback.yml
+  tags:
+    - post-deploy
+    - report

@@ -1,0 +1,12 @@
+---
+# secrets-templates vars
+
+# 密钥文件路径
+openclaw_secrets_file: "{{ openclaw_config_dir }}/runtime-secrets.json"
+openclaw_gateway_env: "{{ openclaw_config_dir }}/gateway.env"
+
+# 密钥模板说明文件
+secrets_readme_file: "{{ openclaw_config_dir }}/SECRETS-README.md"
+
+# 密钥占位符标记
+secrets_placeholder_marker: "YOUR_{{ key_name }}_HERE"

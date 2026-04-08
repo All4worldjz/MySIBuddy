@@ -1,0 +1,80 @@
+---
+# system-prep: 系统准备任务
+# - 更新系统包
+# - 安装必要依赖
+# - 配置时区和 locale
+# - 创建 admin 用户（如不存在）
+
+- name: 包含特定于操作系统的变量
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "../vars/{{ ansible_distribution | lower }}-{{ ansible_distribution_version | lower }}.yml"
+    - "../vars/{{ ansible_distribution | lower }}.yml"
+    - "../vars/{{ ansible_os_family | lower }}.yml"
+    - "../vars/default.yml"
+  tags: always
+
+- name: 更新 apt 缓存（Debian/Ubuntu）
+  apt:
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+  tags: packages
+
+- name: 安装基础依赖（Debian/Ubuntu）
+  apt:
+    name: "{{ system_packages_debian }}"
+    state: present
+  when: ansible_os_family == "Debian"
+  tags: packages
+
+- name: 更新 dnf 缓存（RHEL/CentOS/Rocky）
+  dnf:
+    update_cache: true
+  when: ansible_os_family == "RedHat"
+  tags: packages
+
+- name: 安装基础依赖（RHEL/CentOS/Rocky）
+  dnf:
+    name: "{{ system_packages_rhel }}"
+    state: present
+  when: ansible_os_family == "RedHat"
+  tags: packages
+
+- name: 配置时区
+  timezone:
+    name: "{{ system_timezone }}"
+  tags: timezone
+
+- name: 确保 admin 用户存在
+  user:
+    name: "{{ openclaw_user }}"
+    shell: /bin/bash
+    create_home: true
+    state: present
+  tags: users
+
+- name: 确保 .openclaw 目录存在
+  file:
+    path: "{{ openclaw_config_dir }}"
+    state: directory
+    owner: "{{ openclaw_user }}"
+    group: "{{ openclaw_user }}"
+    mode: "0755"
+  tags: directories
+
+- name: 确保 .openclaw 子目录存在
+  file:
+    path: "{{ openclaw_config_dir }}/{{ item }}"
+    state: directory
+    owner: "{{ openclaw_user }}"
+    group: "{{ openclaw_user }}"
+    mode: "0755"
+  loop:
+    - "agents"
+    - "channels"
+    - "telegram"
+    - "feishu"
+    - "cron"
+    - "backup"
+  tags: directories

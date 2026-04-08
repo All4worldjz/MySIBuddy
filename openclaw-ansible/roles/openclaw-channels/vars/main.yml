@@ -1,0 +1,21 @@
+---
+# openclaw-channels vars
+
+# 渠道配置目录
+openclaw_telegram_dir: "{{ openclaw_config_dir }}/telegram"
+openclaw_feishu_dir: "{{ openclaw_config_dir }}/feishu"
+
+# 渠道默认配置
+openclaw_channels_telegram_default:
+  - account: "chief"
+    agent: "chief-of-staff"
+  - account: "personal"
+    agent: "life-hub"
+  - account: "mentor"
+    agent: "tech-mentor"
+
+openclaw_channels_feishu_default:
+  - account: "work"
+    agent: "work-hub"
+  - account: "scribe"
+    agent: "zh-scribe"

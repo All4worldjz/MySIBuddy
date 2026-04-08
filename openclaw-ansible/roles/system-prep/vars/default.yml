@@ -1,0 +1,36 @@
+---
+# 系统包变量
+
+# Debian/Ubuntu 包
+system_packages_debian:
+  - git
+  - curl
+  - wget
+  - jq
+  - build-essential
+  - ufw
+  - fail2ban
+  - unattended-upgrades
+  - apt-transport-https
+  - ca-certificates
+  - gnupg
+  - lsb-release
+  - software-properties-common
+  - htop
+  - net-tools
+  - vim
+
+# RHEL/CentOS/Rocky 包
+system_packages_rhel:
+  - git
+  - curl
+  - wget
+  - jq
+  - "@Development Tools"
+  - firewalld
+  - fail2ban
+  - dnf-automatic
+  - epel-release
+  - htop
+  - net-tools
+  - vim

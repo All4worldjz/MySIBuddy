@@ -1,0 +1,88 @@
+{
+  "version": "{{ openclaw_version }}",
+  "agents": {
+{% for agent in openclaw_agents %}
+    "{{ agent.id }}": {
+      "name": "{{ agent.name }}",
+      "model": "{{ agent.model }}",
+      "sandbox": {
+        "mode": "{{ agent.sandbox_mode }}"
+      }{% if not agent.allow_exec %},
+      "tools": {
+        "deny": ["exec", "process"]
+      }{% endif %}{% if agent.subagents and agent.subagents | length > 0 %},
+      "subagents": {
+        "allowAgents": {{ agent.subagents | tojson }}
+      }{% endif %}
+    }{% if not loop.last %},{% endif %}
+{% endfor %}
+  },
+  "bindings": [
+{% for agent in openclaw_agents %}
+{% if agent.channel_entry %}
+    {
+      "channel": "{{ agent.channel_entry.split('_')[0] }}",
+      "account": "{{ agent.channel_entry.split('_')[1] if '_' in agent.channel_entry else 'default' }}",
+      "agent": "{{ agent.id }}"
+    }{% if not loop.last %},{% endif %}
+{% endif %}
+{% endfor %}
+  ],
+  "plugins": {
+    "allow": {{ openclaw_plugins_allow | tojson }},
+    "deny": {{ openclaw_plugins_deny | tojson }}
+  },
+  "tools": {
+    "profile": "{{ openclaw_multigagent.tools_profile }}",
+    "sessions": {
+      "visibility": "{{ openclaw_multigagent.sessions_visibility }}"
+    },
+    "agentToAgent": {
+      "enabled": {{ openclaw_multigagent.agent_to_agent_enabled | lower }},
+      "allow": {{ openclaw_agents | map(attribute='id') | list | tojson }}
+    }
+  },
+  "models": {
+    "primary": {
+      "provider": "{{ openclaw_models.primary.provider }}",
+      "model": "{{ openclaw_models.primary.model }}",
+      "apiKeyRef": "{{ openclaw_models.primary.api_key_ref }}"
+    },
+    "fallback": [
+{% for model in openclaw_models.fallback %}
+      {
+        "provider": "{{ model.provider }}",
+        "model": "{{ model.model }}",
+        "apiKeyRef": "{{ model.api_key_ref }}"
+      }{% if not loop.last %},{% endif %}
+{% endfor %}
+    ]
+  },
+  "channels": {
+    "telegram": {
+      "accounts": {
+{% for telegram_account in openclaw_channels.telegram %}
+        "{{ telegram_account.account }}": {
+          "botTokenRef": "{{ telegram_account.bot_token_ref }}",
+          "agent": "{{ telegram_account.agent }}"
+        }{% if not loop.last %},{% endif %}
+{% endfor %}
+      }
+    },
+    "feishu": {
+      "accounts": {
+{% for feishu_account in openclaw_channels.feishu %}
+        "{{ feishu_account.account }}": {
+          "appIdRef": "{{ feishu_account.app_id_ref }}",
+          "appSecretRef": "{{ feishu_account.app_secret_ref }}",
+          "agent": "{{ feishu_account.agent }}"
+        }{% if not loop.last %},{% endif %}
+{% endfor %}
+      }
+    }
+  },
+  "logging": {
+    "level": "{{ openclaw_log_level }}",
+    "file": "{{ openclaw_log_file }}"
+  }
+}

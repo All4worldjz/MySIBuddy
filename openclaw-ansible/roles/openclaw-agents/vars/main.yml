@@ -1,0 +1,32 @@
+---
+# openclaw-agents vars
+
+# Agent 配置目录
+openclaw_agents_dir: "{{ openclaw_config_dir }}/agents"
+
+# Agent 列表（应在 group_vars 中定义，这里作为默认值）
+openclaw_agents_default:
+  - id: "chief-of-staff"
+    name: "Chief of Staff"
+    role: "编排器"
+  - id: "work-hub"
+    name: "Work Hub"
+    role: "工作中枢"
+  - id: "venture-hub"
+    name: "Venture Hub"
+    role: "创业中枢"
+  - id: "life-hub"
+    name: "Life Hub"
+    role: "生活中枢"
+  - id: "product-studio"
+    name: "Product Studio"
+    role: "产品设计"
+  - id: "zh-scribe"
+    name: "Zh Scribe"
+    role: "中文成文"
+  - id: "tech-mentor"
+    name: "Tech Mentor"
+    role: "AI导师"
+  - id: "coder-hub"
+    name: "Coder Hub"
+    role: "编程助手"

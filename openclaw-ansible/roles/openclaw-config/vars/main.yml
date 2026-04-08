@@ -1,0 +1,16 @@
+---
+# openclaw-config vars
+
+# 配置验证设置
+openclaw_config_validate_json: true
+openclaw_config_validate_topology: true
+
+# 备份设置
+openclaw_config_backup_before_apply: true
+openclaw_config_backup_retention_days: 30
+
+# 关键拓扑字段（必须存在）
+openclaw_config_required_fields:
+  - channels
+  - bindings
+  - agents

@@ -1,0 +1,179 @@
+---
+# post-deploy: 部署后验证和健康检查
+# - 检查 OpenClaw 状态
+# - 检查渠道状态
+# - 检查 systemd 服务
+# - 验证密钥配置
+# - 生成部署报告
+
+- name: 检查 OpenClaw 状态
+  shell: |
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    openclaw status --deep
+  register: openclaw_status
+  become_user: "{{ openclaw_user }}"
+  changed_when: false
+  failed_when: false
+  timeout: 30
+  tags:
+    - post-deploy
+    - validate
+
+- name: 显示 OpenClaw 状态
+  debug:
+    var: openclaw_status.stdout
+  tags:
+    - post-deploy
+    - validate
+
+- name: 检查 Gateway systemd 服务状态
+  systemd:
+    name: "{{ openclaw_systemd_service }}"
+    scope: user
+  register: gateway_service
+  failed_when: false
+  tags:
+    - post-deploy
+    - validate
+
+- name: 显示 Gateway 服务状态
+  debug:
+    msg: "Gateway 服务状态: {{ gateway_service.status.ActiveState | default('unknown') }}"
+  tags:
+    - post-deploy
+    - validate
+
+- name: 检查渠道配置
+  shell: |
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    openclaw status --deep | grep -E "(Channel|ON|OK|bindings)"
+  register: channels_status
+  become_user: "{{ openclaw_user }}"
+  changed_when: false
+  failed_when: false
+  timeout: 30
+  tags:
+    - post-deploy
+    - channels
+
+- name: 显示渠道状态
+  debug:
+    var: channels_status.stdout
+  tags:
+    - post-deploy
+    - channels
+
+# ============================================================
+# 密钥验证
+# ============================================================
+- name: 检查密钥文件是否存在
+  stat:
+    path: "{{ item }}"
+  register: secrets_files
+  loop:
+    - "{{ openclaw_secrets_file }}"
+    - "{{ openclaw_gateway_env }}"
+  tags:
+    - post-deploy
+    - secrets
+
+- name: 检查 runtime-secrets.json 是否包含占位符
+  shell: "grep -c 'YOUR_.*_HERE' {{ openclaw_secrets_file }} || echo '0'"
+  register: secrets_placeholder_count
+  changed_when: false
+  failed_when: false
+  tags:
+    - post-deploy
+    - secrets
+
+- name: 警告密钥未配置
+  debug:
+    msg: |
+      ⚠️  密钥未配置！
+      
+      发现 {{ secrets_placeholder_count.stdout | int }} 个占位符。
+      
+      请执行以下步骤：
+      1. SSH 到服务器:
+         ssh {{ openclaw_user }}@{{ inventory_hostname }}
+      
+      2. 编辑密钥配置:
+         vim {{ openclaw_secrets_file }}
+         vim {{ openclaw_gateway_env }}
+      
+      3. 替换所有 YOUR_*_HERE 占位符为真实密钥
+      
+      4. 重启 Gateway:
+         systemctl --user restart {{ openclaw_systemd_service }}
+      
+      5. 验证:
+         openclaw secrets audit
+  when: secrets_placeholder_count.stdout | int > 0
+  tags:
+    - post-deploy
+    - secrets
+
+- name: 确认密钥已配置
+  debug:
+    msg: "✅ 密钥已配置（无占位符）"
+  when: secrets_placeholder_count.stdout | int == 0
+  tags:
+    - post-deploy
+    - secrets
+
+- name: 检查密钥文件权限
+  stat:
+    path: "{{ openclaw_secrets_file }}"
+  register: secrets_file_stat
+  tags:
+    - post-deploy
+    - secrets
+
+- name: 验证密钥文件权限
+  debug:
+    msg: |
+      {% if secrets_file_stat.stat.mode == '0600' %}
+      ✅ 密钥文件权限正确: {{ secrets_file_stat.stat.mode }}
+      {% else %}
+      ⚠️  密钥文件权限不正确: {{ secrets_file_stat.stat.mode }}
+      建议: chmod 600 {{ openclaw_secrets_file }}
+      {% endif %}
+  tags:
+    - post-deploy
+    - secrets
+
+- name: 生成部署报告
+  template:
+    src: "deployment-report.md.j2"
+    dest: "/tmp/openclaw-deployment-report-{{ ansible_date_time.date }}.md"
+    owner: "{{ openclaw_user }}"
+    group: "{{ openclaw_user }}"
+    mode: "0644"
+  tags:
+    - post-deploy
+    - report
+
+- name: 显示部署完成消息
+  debug:
+    msg: |
+      ✅ OpenClaw 部署完成！
+
+      📋 下一步操作：
+      1. 配置密钥（必须）：
+         ssh {{ openclaw_user }}@{{ inventory_hostname }}
+         vim {{ openclaw_secrets_file }}
+         vim {{ openclaw_gateway_env }}
+
+      2. 重启 Gateway：
+         systemctl --user restart {{ openclaw_systemd_service }}
+
+      3. 验证部署：
+         openclaw status --deep
+
+      4. 查看部署报告：
+         cat /tmp/openclaw-deployment-report-{{ ansible_date_time.date }}.md
+  tags:
+    - post-deploy
+    - report

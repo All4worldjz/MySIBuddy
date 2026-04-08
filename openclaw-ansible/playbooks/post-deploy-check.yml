@@ -1,0 +1,14 @@
+---
+# post-deploy-check.yml - 部署后健康检查
+# 可以独立运行，用于验证部署状态
+
+- name: 部署后健康检查
+  hosts: openclaw
+  become: true
+  become_user: "{{ openclaw_user }}"
+  roles:
+    - post-deploy
+  tags:
+    - post-deploy
+    - validate
+    - check

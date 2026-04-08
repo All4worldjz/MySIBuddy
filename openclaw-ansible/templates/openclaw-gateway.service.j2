@@ -1,0 +1,25 @@
+[Unit]
+Description=OpenClaw Gateway Service
+After=network.target
+
+[Service]
+Type=simple
+User={{ openclaw_user }}
+Group={{ openclaw_user }}
+EnvironmentFile={{ openclaw_gateway_env }}
+ExecStart={{ node_bin | default('/home/' + openclaw_user + '/.nvm/versions/node/v' + nodejs_version + '.0.0/bin/node') }} {{ openclaw_bin | default('/home/' + openclaw_user + '/.nvm/versions/node/v' + nodejs_version + '.0.0/bin/openclaw') }} gateway
+WorkingDirectory={{ openclaw_home }}
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=openclaw-gateway
+
+# 安全加固
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ openclaw_config_dir }}
+
+[Install]
+WantedBy=default.target

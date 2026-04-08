@@ -1,0 +1,13 @@
+{
+  "models": {
+    "{{ agent.model }}": {
+      "provider": "minimax",
+      "name": "{{ agent.model }}",
+      "contextWindow": 32768,
+      "maxTokens": 8192,
+      "temperature": 0.7,
+      "topP": 0.9
+    }
+  },
+  "defaultModel": "{{ agent.model }}"
+}

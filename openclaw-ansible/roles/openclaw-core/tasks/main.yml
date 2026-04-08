@@ -1,0 +1,127 @@
+---
+# openclaw-core: 安装 OpenClaw CLI 和 Gateway
+# - 全局安装 openclaw npm 包
+# - 安装插件（openclaw-lark 等）
+# - 发现实际安装路径
+# - 初始化基础配置
+
+- name: 检查 OpenClaw 是否已安装
+  shell: |
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    which openclaw
+  register: openclaw_installed
+  become_user: "{{ openclaw_user }}"
+  failed_when: false
+  changed_when: false
+  tags: openclaw
+
+- name: 获取当前 OpenClaw 版本
+  shell: |
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    openclaw --version 2>/dev/null || echo "not-installed"
+  register: current_openclaw_version
+  become_user: "{{ openclaw_user }}"
+  changed_when: false
+  failed_when: false
+  tags: openclaw
+
+- name: 安装/升级 OpenClaw CLI
+  shell: |
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    npm install -g openclaw@{{ openclaw_version }}
+  become_user: "{{ openclaw_user }}"
+  timeout: 300  # 5 分钟超时
+  when: >
+    openclaw_installed.rc != 0 or
+    current_openclaw_version.stdout != openclaw_version
+  tags: openclaw
+
+- name: 验证 OpenClaw 安装
+  shell: |
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    openclaw --version
+  register: openclaw_version_result
+  become_user: "{{ openclaw_user }}"
+  changed_when: false
+  tags: openclaw
+
+- name: 显示 OpenClaw 版本
+  debug:
+    msg: "OpenClaw 已安装: {{ openclaw_version_result.stdout }}"
+  tags: openclaw
+
+- name: 发现 Node.js 实际安装路径
+  shell: |
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    which node
+  register: node_actual_path
+  become_user: "{{ openclaw_user }}"
+  changed_when: false
+  tags:
+    - openclaw
+    - paths
+
+- name: 发现 OpenClaw 实际路径
+  shell: |
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    which openclaw
+  register: openclaw_actual_path
+  become_user: "{{ openclaw_user }}"
+  changed_when: false
+  tags:
+    - openclaw
+    - paths
+
+- name: 设置路径事实变量
+  set_fact:
+    node_bin: "{{ node_actual_path.stdout }}"
+    openclaw_bin: "{{ openclaw_actual_path.stdout }}"
+  tags:
+    - openclaw
+    - paths
+
+- name: 安装 OpenClaw 插件
+  shell: |
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    npm install -g {{ item }}
+  become_user: "{{ openclaw_user }}"
+  timeout: 180  # 3 分钟超时
+  loop: "{{ openclaw_plugins_allow }}"
+  tags:
+    - openclaw
+    - plugins
+
+- name: 验证插件安装
+  shell: |
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    openclaw plugins list
+  register: plugins_list
+  become_user: "{{ openclaw_user }}"
+  changed_when: false
+  tags:
+    - openclaw
+    - plugins
+
+- name: 显示已安装插件
+  debug:
+    var: plugins_list.stdout
+  tags:
+    - openclaw
+    - plugins
+
+- name: 显示路径信息
+  debug:
+    msg: |
+      Node.js 路径: {{ node_bin }}
+      OpenClaw 路径: {{ openclaw_bin }}
+  tags:
+    - openclaw
+    - paths

@@ -1,0 +1,20 @@
+# OpenClaw 主机清单示例
+# 复制此文件为 hosts.ini 并修改
+
+[openclaw]
+# 基本配置（SSH 密钥认证）
+47.82.234.46 ansible_user=admin ansible_ssh_private_key_file=~/.ssh/id_rsa
+
+# 可选：使用用户名密码认证（不推荐）
+# 47.82.234.46 ansible_user=admin ansible_password=your_password ansible_ssh_pass=your_password
+
+# 可选：指定 SSH 端口
+# 47.82.234.46 ansible_user=admin ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_port=2222
+
+# 可选：使用跳板机
+# 47.82.234.46 ansible_user=admin ansible_ssh_private_key_file=~/.ssh/id_rsa ansible_proxy_command="ssh -W %h:%p jump_host"
+
+[openclaw:vars]
+# 全局变量（可选覆盖 group_vars/all.yml 中的值）
+# openclaw_version=2026.4.5
+# nodejs_version=24

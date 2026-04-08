@@ -1,0 +1,7 @@
+---
+# handlers file for nodejs
+
+- name: reload bash profile
+  shell: "source {{ openclaw_home }}/.bashrc"
+  become_user: "{{ openclaw_user }}"
+  changed_when: false

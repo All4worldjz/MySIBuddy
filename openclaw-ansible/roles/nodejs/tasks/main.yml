@@ -1,0 +1,111 @@
+---
+# nodejs: 安装 Node.js 24.x
+# - 使用 nvm 安装（推荐）
+# - 或者使用 NodeSource 源
+
+- name: 使用 nvm 安装 Node.js
+  block:
+    - name: 检查 nvm 是否已安装
+      stat:
+        path: "{{ nvm_install_path }}/nvm.sh"
+      register: nvm_installed
+
+    - name: 下载并安装 nvm
+      shell: |
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v{{ nvm_version }}/install.sh | bash
+      args:
+        creates: "{{ nvm_install_path }}/nvm.sh"
+      timeout: 120
+      when: not nvm_installed.stat.exists
+
+    - name: 安装 Node.js {{ nodejs_version }}
+      shell: |
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        nvm install {{ nodejs_version }}
+        nvm alias default {{ nodejs_version }}
+      args:
+        creates: "{{ nvm_install_path }}/versions/node/v{{ nodejs_version }}.0.0/bin/node"
+      become_user: "{{ openclaw_user }}"
+
+    - name: 验证 Node.js 安装
+      shell: |
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        node --version
+      register: node_version
+      become_user: "{{ openclaw_user }}"
+      changed_when: false
+
+    - name: 显示 Node.js 版本
+      debug:
+        msg: "Node.js 已安装: {{ node_version.stdout }}"
+
+  when: nodejs_install_method == "nvm"
+  tags: nodejs
+
+- name: 使用 NodeSource 安装 Node.js
+  block:
+    - name: 添加 NodeSource 源（Debian/Ubuntu）
+      block:
+        - name: 下载 NodeSource 设置脚本
+          get_url:
+            url: "https://deb.nodesource.com/setup_{{ nodejs_version }}.x"
+            dest: "/tmp/nodesource_setup.sh"
+            mode: "0755"
+
+        - name: 运行 NodeSource 设置脚本
+          command: bash /tmp/nodesource_setup.sh
+          args:
+            creates: /etc/apt/sources.list.d/nodesource.list
+
+        - name: 清理临时文件
+          file:
+            path: /tmp/nodesource_setup.sh
+            state: absent
+
+      when: ansible_os_family == "Debian"
+
+    - name: 添加 NodeSource 源（RHEL/CentOS/Rocky）
+      block:
+        - name: 安装 Node.js {{ nodejs_version }} from NodeSource
+          shell: |
+            curl -fsSL https://rpm.nodesource.com/setup_{{ nodejs_version }}.x | bash -
+          args:
+            creates: /etc/yum.repos.d/nodesource-nodejs.repo
+
+      when: ansible_os_family == "RedHat"
+
+    - name: 安装 Node.js（Debian/Ubuntu）
+      apt:
+        name: nodejs
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: 安装 Node.js（RHEL/CentOS/Rocky）
+      dnf:
+        name: nodejs
+        state: present
+      when: ansible_os_family == "RedHat"
+
+    - name: 验证 Node.js 安装
+      command: node --version
+      register: node_version
+      changed_when: false
+
+    - name: 显示 Node.js 版本
+      debug:
+        msg: "Node.js 已安装: {{ node_version.stdout }}"
+
+  when: nodejs_install_method == "nodesource"
+  tags: nodejs
+
+- name: 安装全局 npm 包
+  shell: |
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    npm install -g npm@latest
+  become_user: "{{ openclaw_user }}"
+  timeout: 180
+  when: nodejs_install_method == "nvm"
+  tags: nodejs

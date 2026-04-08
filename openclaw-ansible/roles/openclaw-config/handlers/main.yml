@@ -1,0 +1,9 @@
+---
+# openclaw-config handlers
+
+- name: restart openclaw-gateway
+  systemd:
+    name: "{{ openclaw_systemd_service }}"
+    scope: user
+    state: restarted
+  become_user: "{{ openclaw_user }}"

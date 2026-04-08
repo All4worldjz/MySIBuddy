@@ -1,0 +1,44 @@
+---
+# openclaw-channels: 配置通信渠道
+# - Telegram 渠道配置（3 个账号）
+# - Feishu 渠道配置（2 个账号，openclaw-lark 插件）
+
+- name: 创建 Telegram 渠道目录
+  file:
+    path: "{{ openclaw_config_dir }}/telegram/{{ item.account }}"
+    state: directory
+    owner: "{{ openclaw_user }}"
+    group: "{{ openclaw_user }}"
+    mode: "0755"
+  loop: "{{ openclaw_channels.telegram }}"
+  tags: channels
+
+- name: 配置 Telegram 渠道
+  template:
+    src: "channels/telegram-account.json.j2"
+    dest: "{{ openclaw_config_dir }}/telegram/{{ item.account }}/account.json"
+    owner: "{{ openclaw_user }}"
+    group: "{{ openclaw_user }}"
+    mode: "0644"
+  loop: "{{ openclaw_channels.telegram }}"
+  tags: channels
+
+- name: 创建 Feishu 渠道目录
+  file:
+    path: "{{ openclaw_config_dir }}/feishu/{{ item.account }}"
+    state: directory
+    owner: "{{ openclaw_user }}"
+    group: "{{ openclaw_user }}"
+    mode: "0755"
+  loop: "{{ openclaw_channels.feishu }}"
+  tags: channels
+
+- name: 配置 Feishu 渠道
+  template:
+    src: "channels/feishu-account.json.j2"
+    dest: "{{ openclaw_config_dir }}/feishu/{{ item.account }}/account.json"
+    owner: "{{ openclaw_user }}"
+    group: "{{ openclaw_user }}"
+    mode: "0644"
+  loop: "{{ openclaw_channels.feishu }}"
+  tags: channels

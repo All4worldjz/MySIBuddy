@@ -1,0 +1,143 @@
+# OpenClaw 部署报告
+
+**部署日期**: {{ ansible_date_time.date }}
+**部署时间**: {{ ansible_date_time.time }}
+**目标主机**: {{ inventory_hostname }}
+**Ansible 用户**: {{ ansible_user }}
+
+---
+
+## ✅ 部署摘要
+
+| 组件 | 状态 |
+|------|------|
+| 系统准备 | ✅ 完成 |
+| Node.js {{ nodejs_version }} | ✅ 完成 |
+| OpenClaw {{ openclaw_version }} | ✅ 完成 |
+| 8 Agent 集群 | ✅ 完成 |
+| Telegram 渠道（3 账号） | ✅ 完成 |
+| Feishu 渠道（2 账号） | ✅ 完成 |
+| 安全加固 | ✅ 完成 |
+| 密钥模板 | ✅ 完成 |
+
+---
+
+## 📋 配置详情
+
+### Agent 拓扑
+
+| Agent | 角色 | 模型 | 渠道 |
+|-------|------|------|------|
+{% for agent in openclaw_agents %}
+| {{ agent.id }} | {{ agent.role }} | {{ agent.model }} | {{ agent.channel_entry or '无' }} |
+{% endfor %}
+
+### 模型路由
+
+- **主模型**: {{ openclaw_models.primary.model }}
+- **备用模型**:
+{% for model in openclaw_models.fallback %}
+  - {{ model.model }}
+{% endfor %}
+
+### 安全加固
+
+- SSH: root 登录{{ "已禁用" if security_hardening.ssh.disable_root_login else "未禁用" }}
+- 防火墙: {{ "已启用" if security_hardening.firewall.enabled else "未启用" }}
+- Swap: {{ security_hardening.swap.size_gb }}GB
+- fail2ban: {{ "已启用" if security_hardening.fail2ban.enabled else "未启用" }}
+
+---
+
+## ⚠️ 后续操作清单
+
+### 必须执行（部署后立即操作）
+
+- [ ] 1. SSH 到服务器
+  ```bash
+  ssh {{ openclaw_user }}@{{ inventory_hostname }}
+  ```
+
+- [ ] 2. 编辑密钥配置
+  ```bash
+  vim {{ openclaw_config_dir }}/runtime-secrets.json
+  vim {{ openclaw_config_dir }}/gateway.env
+  ```
+
+- [ ] 3. 重启 Gateway
+  ```bash
+  systemctl --user restart {{ openclaw_systemd_service }}
+  ```
+
+- [ ] 4. 验证部署
+  ```bash
+  openclaw status --deep
+  openclaw secrets audit
+  ```
+
+### 可选操作
+
+- [ ] 配置 Agent 提示词（AGENTS.md、SOUL.md）
+- [ ] 配置 Telegram Bot（设置 webhook、菜单等）
+- [ ] 配置飞书应用（设置回调 URL、权限等）
+- [ ] 配置备份策略
+- [ ] 配置监控告警
+
+---
+
+## 🔗 有用命令
+
+### 状态检查
+
+```bash
+# 深度状态
+openclaw status --deep
+
+# 渠道状态
+openclaw status --deep | grep -E "(Channel|ON|OK)"
+
+# 服务状态
+systemctl --user status {{ openclaw_systemd_service }}
+
+# 日志
+journalctl --user -u {{ openclaw_systemd_service }} -f
+```
+
+### 密钥管理
+
+```bash
+# 审计密钥
+openclaw secrets audit
+
+# 重新加载密钥
+openclaw secrets reload
+
+# 检查密钥文件权限
+ls -la {{ openclaw_config_dir }}/runtime-secrets.json {{ openclaw_config_dir }}/gateway.env
+```
+
+### 服务管理
+
+```bash
+# 重启服务
+systemctl --user restart {{ openclaw_systemd_service }}
+
+# 停止服务
+systemctl --user stop {{ openclaw_systemd_service }}
+
+# 启用开机启动
+systemctl --user enable {{ openclaw_systemd_service }}
+```
+
+---
+
+## 📚 文档链接
+
+- [README](README.md)
+- [架构说明](docs/architecture.md)
+- [故障排除](docs/troubleshooting.md)
+- [安全加固](docs/security.md)
+
+---
+
+**部署完成！** 🎉

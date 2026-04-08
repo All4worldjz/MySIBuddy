@@ -1,0 +1,112 @@
+---
+# rollback.yml - OpenClaw 配置回滚 Playbook
+# 从最近的时间戳备份恢复 openclaw.json 配置
+
+- name: 回滚 OpenClaw 配置
+  hosts: openclaw
+  become: true
+  become_user: "{{ openclaw_user }}"
+  vars:
+    # 可选：指定备份文件路径（默认使用最新的备份）
+    rollback_backup_path: null
+  tasks:
+    - name: 查找最新的备份文件
+      find:
+        paths: "{{ openclaw_config_dir }}"
+        patterns: "openclaw.json.pre-apply-*"
+        file_type: file
+      register: backup_files
+      when: rollback_backup_path is null
+
+    - name: 设置备份文件路径
+      set_fact:
+        backup_file: "{{ (backup_files.files | sort(attribute='mtime') | last).path }}"
+      when: rollback_backup_path is null
+
+    - name: 使用指定的备份文件路径
+      set_fact:
+        backup_file: "{{ rollback_backup_path }}"
+      when: rollback_backup_path is not null
+
+    - name: 验证备份文件存在
+      stat:
+        path: "{{ backup_file }}"
+      register: backup_stat
+
+    - name: 失败：备份文件不存在
+      fail:
+        msg: >
+          ❌ 备份文件不存在: {{ backup_file }}
+          
+          可用的备份文件:
+          {% if backup_files is defined %}
+          {% for f in backup_files.files %}
+          - {{ f.path }}
+          {% endfor %}
+          {% else %}
+          (无)
+          {% endif %}
+      when: not backup_stat.stat.exists
+
+    - name: 验证备份文件 JSON 语法
+      command: "jq '.' {{ backup_file }}"
+      register: backup_validate_result
+      failed_when: false
+      changed_when: false
+
+    - name: 失败：备份文件 JSON 语法无效
+      fail:
+        msg: >
+          ❌ 备份文件 JSON 语法无效: {{ backup_file }}
+          
+          请检查文件内容或手动修复后重试。
+      when: backup_validate_result.rc != 0
+
+    - name: 备份当前配置（回滚前）
+      copy:
+        src: "{{ openclaw_config_file }}"
+        dest: "{{ openclaw_config_file }}.pre-rollback-{{ ansible_date_time.iso8601_basic_short }}"
+        remote_src: true
+      when: openclaw_config_file is exists
+
+    - name: 恢复备份配置
+      copy:
+        src: "{{ backup_file }}"
+        dest: "{{ openclaw_config_file }}"
+        remote_src: true
+        owner: "{{ openclaw_user }}"
+        group: "{{ openclaw_user }}"
+        mode: "0644"
+
+    - name: 重启 Gateway 服务
+      systemd:
+        name: "{{ openclaw_systemd_service }}"
+        scope: user
+        state: restarted
+
+    - name: 等待 Gateway 启动
+      pause:
+        seconds: 5
+
+    - name: 验证 Gateway 状态
+      systemd:
+        name: "{{ openclaw_systemd_service }}"
+        scope: user
+      register: gateway_status
+
+    - name: 显示回滚成功
+  debug:
+    msg: |
+      ✅ 配置回滚成功！
+      
+      📋 回滚详情:
+      - 备份文件: {{ backup_file }}
+      - 恢复到: {{ openclaw_config_file }}
+      - 回滚前备份: {{ openclaw_config_file }}.pre-rollback-{{ ansible_date_time.iso8601_basic_short }}
+      
+      📊 Gateway 状态: {{ gateway_status.status.ActiveState | default('unknown') }}
+      
+      请验证:
+      1. openclaw status --deep
+      2. 渠道状态是否正常
+      3. Agent 是否响应

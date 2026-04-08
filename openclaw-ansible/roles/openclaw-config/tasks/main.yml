@@ -1,0 +1,125 @@
+---
+# openclaw-config: 安全地生成和应用 openclaw.json 配置
+# - 生成到临时文件
+# - 验证 JSON 语法
+# - 验证关键拓扑字段
+# - 自动备份现有配置
+# - 原子性替换
+
+- name: 生成 openclaw.json 到临时文件
+  template:
+    src: "openclaw.json.j2"
+    dest: "{{ openclaw_config_dir }}/openclaw.json.new"
+    owner: "{{ openclaw_user }}"
+    group: "{{ openclaw_user }}"
+    mode: "0644"
+    validate: "jq '.' %s > /dev/null"
+  become_user: "{{ openclaw_user }}"
+  tags:
+    - config
+    - openclaw-json
+
+- name: 验证 JSON 语法
+  command: "jq '.' {{ openclaw_config_dir }}/openclaw.json.new"
+  become_user: "{{ openclaw_user }}"
+  changed_when: false
+  register: json_validate
+  tags:
+    - config
+    - openclaw-json
+
+- name: 验证关键拓扑字段（channels）
+  command: "jq -e '.channels' {{ openclaw_config_dir }}/openclaw.json.new"
+  become_user: "{{ openclaw_user }}"
+  changed_when: false
+  register: channels_check
+  failed_when: false
+  tags:
+    - config
+    - topology-check
+
+- name: 验证关键拓扑字段（bindings）
+  command: "jq -e '.bindings' {{ openclaw_config_dir }}/openclaw.json.new"
+  become_user: "{{ openclaw_user }}"
+  changed_when: false
+  register: bindings_check
+  failed_when: false
+  tags:
+    - config
+    - topology-check
+
+- name: 验证关键拓扑字段（agents）
+  command: "jq -e '.agents' {{ openclaw_config_dir }}/openclaw.json.new"
+  become_user: "{{ openclaw_user }}"
+  changed_when: false
+  register: agents_check
+  failed_when: false
+  tags:
+    - config
+    - topology-check
+
+- name: 验证拓扑完整性
+  fail:
+    msg: >
+      ❌ 配置拓扑不完整！
+      {% if channels_check.rc != 0 %}
+      - 缺少: channels
+      {% endif %}
+      {% if bindings_check.rc != 0 %}
+      - 缺少: bindings
+      {% endif %}
+      {% if agents_check.rc != 0 %}
+      - 缺少: agents
+      {% endif %}
+      
+      请检查 openclaw.json.j2 模板和变量配置。
+  when: >
+    channels_check.rc != 0 or
+    bindings_check.rc != 0 or
+    agents_check.rc != 0
+  tags:
+    - config
+    - topology-check
+
+- name: 检查是否存在现有配置
+  stat:
+    path: "{{ openclaw_config_file }}"
+  register: current_config_stat
+  become_user: "{{ openclaw_user }}"
+  tags:
+    - config
+    - backup
+
+- name: 备份现有配置
+  copy:
+    src: "{{ openclaw_config_file }}"
+    dest: "{{ openclaw_config_file }}.pre-apply-{{ ansible_date_time.iso8601_basic_short }}"
+    remote_src: true
+    owner: "{{ openclaw_user }}"
+    group: "{{ openclaw_user }}"
+    mode: "0644"
+  become_user: "{{ openclaw_user }}"
+  when: current_config_stat.stat.exists
+  tags:
+    - config
+    - backup
+
+- name: 应用新配置（原子替换）
+  command: "mv {{ openclaw_config_dir }}/openclaw.json.new {{ openclaw_config_file }}"
+  become_user: "{{ openclaw_user }}"
+  tags:
+    - config
+    - openclaw-json
+
+- name: 显示配置应用成功
+  debug:
+    msg: |
+      ✅ openclaw.json 配置已应用
+      {% if current_config_stat.stat.exists %}
+      - 备份位置: {{ openclaw_config_file }}.pre-apply-{{ ansible_date_time.iso8601_basic_short }}
+      {% else %}
+      - 新配置（无备份）
+      {% endif %}
+  tags:
+    - config
+    - report

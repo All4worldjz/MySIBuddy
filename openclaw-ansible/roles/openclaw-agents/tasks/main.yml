@@ -1,0 +1,132 @@
+---
+# openclaw-agents: 配置 8 Agent 集群
+# - 创建 agent 目录结构
+# - 生成 AGENTS.md、SOUL.md、MEMORY.md 等（仅初次）
+# - 配置 auth-profiles.json 和 models.json
+
+- name: 创建 Agent 目录结构
+  file:
+    path: "{{ openclaw_config_dir }}/agents/{{ item.id }}"
+    state: directory
+    owner: "{{ openclaw_user }}"
+    group: "{{ openclaw_user }}"
+    mode: "0755"
+  loop: "{{ openclaw_agents }}"
+  tags: agents
+
+- name: 检查现有 Agent 配置
+  stat:
+    path: "{{ openclaw_config_dir }}/agents/{{ item.id }}/AGENTS.md"
+  register: agent_config_check
+  loop: "{{ openclaw_agents }}"
+  loop_control:
+    label: "{{ item.id }}"
+  tags: agents
+
+- name: 生成 Agent AGENTS.md（仅初次）
+  template:
+    src: "agents/AGENTS.md.j2"
+    dest: "{{ openclaw_config_dir }}/agents/{{ item.item.id }}/AGENTS.md"
+    owner: "{{ openclaw_user }}"
+    group: "{{ openclaw_user }}"
+    mode: "0644"
+  loop: "{{ agent_config_check.results }}"
+  when: not item.stat.exists
+  loop_control:
+    label: "{{ item.item.id }}"
+  tags: agents
+
+- name: 生成 Agent SOUL.md（仅初次）
+  template:
+    src: "agents/SOUL.md.j2"
+    dest: "{{ openclaw_config_dir }}/agents/{{ item.item.id }}/SOUL.md"
+    owner: "{{ openclaw_user }}"
+    group: "{{ openclaw_user }}"
+    mode: "0644"
+  loop: "{{ agent_config_check.results }}"
+  when: not item.stat.exists
+  loop_control:
+    label: "{{ item.item.id }}"
+  tags: agents
+
+- name: 创建 Agent MEMORY.md（仅初次）
+  file:
+    path: "{{ openclaw_config_dir }}/agents/{{ item.item.id }}/MEMORY.md"
+    state: touch
+    owner: "{{ openclaw_user }}"
+    group: "{{ openclaw_user }}"
+    mode: "0644"
+  loop: "{{ agent_config_check.results }}"
+  when: not item.stat.exists
+  loop_control:
+    label: "{{ item.item.id }}"
+  tags: agents
+
+- name: 检查 auth-profiles.json 是否存在
+  stat:
+    path: "{{ openclaw_config_dir }}/agents/{{ item.id }}/auth-profiles.json"
+  register: auth_profiles_check
+  loop: "{{ openclaw_agents }}"
+  loop_control:
+    label: "{{ item.id }}"
+  tags: agents
+
+- name: 复制 auth-profiles.json 到每个 Agent（仅初次）
+  template:
+    src: "agents/auth-profiles.json.j2"
+    dest: "{{ openclaw_config_dir }}/agents/{{ item.item.id }}/auth-profiles.json"
+    owner: "{{ openclaw_user }}"
+    group: "{{ openclaw_user }}"
+    mode: "0644"
+  loop: "{{ auth_profiles_check.results }}"
+  when: not item.stat.exists
+  loop_control:
+    label: "{{ item.item.id }}"
+  tags: agents
+
+- name: 检查 models.json 是否存在
+  stat:
+    path: "{{ openclaw_config_dir }}/agents/{{ item.id }}/models.json"
+  register: models_check
+  loop: "{{ openclaw_agents }}"
+  loop_control:
+    label: "{{ item.id }}"
+  tags: agents
+
+- name: 复制 models.json 到每个 Agent（仅初次）
+  template:
+    src: "agents/models.json.j2"
+    dest: "{{ openclaw_config_dir }}/agents/{{ item.item.id }}/models.json"
+    owner: "{{ openclaw_user }}"
+    group: "{{ openclaw_user }}"
+    mode: "0644"
+  loop: "{{ models_check.results }}"
+  when: not item.stat.exists
+  loop_control:
+    label: "{{ item.item.id }}"
+  tags: agents
+
+- name: 创建 Agent memory 目录
+  file:
+    path: "{{ openclaw_config_dir }}/agents/{{ item.id }}/memory"
+    state: directory
+    owner: "{{ openclaw_user }}"
+    group: "{{ openclaw_user }}"
+    mode: "0755"
+  loop: "{{ openclaw_agents }}"
+  tags: agents
+
+- name: 显示 Agent 配置摘要
+  debug:
+    msg: |
+      📋 Agent 配置摘要:
+      {% for agent in openclaw_agents %}
+      - {{ agent.id }}:
+        {% set check = agent_config_check.results | selectattr('item.id', 'equalto', agent.id) | list | first %}
+        {% if check.stat.exists %}
+          ✅ 已存在（保留自定义内容）
+        {% else %}
+          🆕 已生成模板
+        {% endif %}
+      {% endfor %}
+  tags: agents

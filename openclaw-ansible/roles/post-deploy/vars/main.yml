@@ -1,0 +1,12 @@
+---
+# post-deploy vars
+
+# 部署报告配置
+deployment_report_dir: "/tmp"
+deployment_report_prefix: "openclaw-deployment-report"
+
+# 健康检查超时时间（秒）
+health_check_timeout: 60
+
+# 预期 Agent 数量
+expected_agents_count: 8

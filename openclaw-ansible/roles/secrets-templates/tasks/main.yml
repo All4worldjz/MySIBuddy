@@ -1,0 +1,54 @@
+---
+# secrets-templates: 生成密钥配置模板
+# - runtime-secrets.json（OpenClaw 运行时密钥）
+# - gateway.env（Gateway 服务环境变量）
+# - 设置正确的文件权限
+
+- name: 生成 runtime-secrets.json 模板
+  template:
+    src: "runtime-secrets.json.j2"
+    dest: "{{ openclaw_secrets_file }}"
+    owner: "{{ openclaw_user }}"
+    group: "{{ openclaw_user }}"
+    mode: "0600"
+  tags: secrets
+
+- name: 生成 gateway.env 模板
+  template:
+    src: "gateway.env.j2"
+    dest: "{{ openclaw_gateway_env }}"
+    owner: "{{ openclaw_user }}"
+    group: "{{ openclaw_user }}"
+    mode: "0600"
+  tags: secrets
+
+- name: 生成密钥配置说明文件
+  template:
+    src: "SECRETS-README.md.j2"
+    dest: "{{ openclaw_config_dir }}/SECRETS-README.md"
+    owner: "{{ openclaw_user }}"
+    group: "{{ openclaw_user }}"
+    mode: "0644"
+  tags: secrets
+
+- name: 显示密钥配置提示
+  debug:
+    msg: |
+      ⚠️  密钥配置模板已生成！
+
+      部署后必须执行以下步骤：
+
+      1. SSH 到服务器：
+         ssh {{ openclaw_user }}@{{ inventory_hostname }}
+
+      2. 编辑密钥配置：
+         vim {{ openclaw_secrets_file }}
+         vim {{ openclaw_gateway_env }}
+
+      3. 填入真实密钥后重启 Gateway：
+         systemctl --user restart {{ openclaw_systemd_service }}
+
+      4. 验证配置：
+         openclaw secrets audit
+         openclaw status --deep
+  tags: secrets

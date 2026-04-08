@@ -1,0 +1,12 @@
+---
+# nodejs vars
+
+# nvm 配置
+nvm_version: "0.39.7"
+nvm_install_path: "/home/{{ openclaw_user }}/.nvm"
+
+# Node.js 版本
+nodejs_version: "24"
+
+# 安装方法（nvm 或 nodesource）
+nodejs_install_method: "nvm"

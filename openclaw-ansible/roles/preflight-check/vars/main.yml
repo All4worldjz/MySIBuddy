@@ -1,0 +1,14 @@
+---
+# preflight-check vars
+
+# 最低资源要求
+min_memory_mb: 4096      # 4GB
+min_cpu_cores: 2         # 2 核心
+min_disk_gb: 50          # 50GB
+
+# 预检端口列表（可根据需要扩展）
+preflight_check_ports:
+  - 22  # SSH
+
+# 是否强制要求预检通过
+preflight_fail_on_warning: true

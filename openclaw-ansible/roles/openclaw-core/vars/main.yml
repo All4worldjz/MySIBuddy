@@ -1,0 +1,14 @@
+---
+# openclaw-core vars
+
+# OpenClaw 版本
+openclaw_version: "2026.4.5"
+
+# 插件列表
+openclaw_plugins:
+  - "openclaw-lark"
+  - "telegram"
+  - "duckduckgo"
+  - "minimax"
+  - "openai"
+  - "qwen"

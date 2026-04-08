@@ -1,0 +1,276 @@
+# ============================================================
+# OpenClaw Ansible - 全局变量配置
+# ============================================================
+# 此文件定义所有角色的默认变量
+# 可在 host_vars/<hostname>.yml 中覆盖特定主机的值
+# ============================================================
+
+# ------------------------------------------------------------
+# 系统配置
+# ------------------------------------------------------------
+system_timezone: "Asia/Shanghai"
+system_locale: "en_US.UTF-8"
+swap_size_gb: 4
+swap_file_path: "/swapfile"
+
+# ------------------------------------------------------------
+# Node.js 配置
+# ------------------------------------------------------------
+nodejs_version: "24"
+nodejs_install_method: "nvm"  # 可选：nvm | nodesource
+nvm_version: "0.39.7"
+nvm_install_path: "/home/{{ openclaw_user }}/.nvm"
+
+# ------------------------------------------------------------
+# OpenClaw 核心配置
+# ------------------------------------------------------------
+openclaw_version: "2026.4.5"
+openclaw_user: "admin"
+openclaw_home: "/home/{{ openclaw_user }}"
+openclaw_config_dir: "{{ openclaw_home }}/.openclaw"
+openclaw_config_file: "{{ openclaw_config_dir }}/openclaw.json"
+openclaw_secrets_file: "{{ openclaw_config_dir }}/runtime-secrets.json"
+openclaw_gateway_env: "{{ openclaw_config_dir }}/gateway.env"
+openclaw_systemd_service: "openclaw-gateway"
+
+# ------------------------------------------------------------
+# OpenClaw Plugins
+# ------------------------------------------------------------
+openclaw_plugins_allow:
+  - "openclaw-lark"
+  - "telegram"
+  - "duckduckgo"
+  - "minimax"
+  - "openai"
+  - "qwen"
+
+openclaw_plugins_deny:
+  - "feishu"
+
+# ------------------------------------------------------------
+# 8 Agent 配置
+# ------------------------------------------------------------
+openclaw_agents:
+  - id: "chief-of-staff"
+    name: "Chief of Staff"
+    role: "编排器"
+    description: "跨域统筹、审批、系统维护"
+    model: "minimax/MiniMax-M2.7"
+    sandbox_mode: "off"
+    allow_exec: true
+    channel_entry: "telegram_chief"
+    subagents:
+      - "work-hub"
+      - "venture-hub"
+      - "life-hub"
+      - "product-studio"
+      - "zh-scribe"
+      - "tech-mentor"
+      - "coder-hub"
+
+  - id: "work-hub"
+    name: "Work Hub"
+    role: "工作中枢"
+    description: "正式工作事务（不含公众号）"
+    model: "minimax/MiniMax-M2.7"
+    sandbox_mode: "off"
+    allow_exec: false
+    channel_entry: "feishu_work"
+    subagents: []
+
+  - id: "venture-hub"
+    name: "Venture Hub"
+    role: "创业中枢"
+    description: "创业战略/PMF/MVP（不含技术选型）"
+    model: "minimax/MiniMax-M2.7"
+    sandbox_mode: "off"
+    allow_exec: false
+    channel_entry: "telegram_personal_group"
+    subagents: []
+
+  - id: "life-hub"
+    name: "Life Hub"
+    role: "生活中枢"
+    description: "生活财务事务（不含学习安排）"
+    model: "minimax/MiniMax-M2.7"
+    sandbox_mode: "off"
+    allow_exec: false
+    channel_entry: "telegram_personal"
+    subagents: []
+
+  - id: "product-studio"
+    name: "Product Studio"
+    role: "产品设计"
+    description: "PRD、产品设计（后台specialist）"
+    model: "minimax/MiniMax-M2.7"
+    sandbox_mode: "off"
+    allow_exec: false
+    channel_entry: null  # 无直接入口
+    subagents: []
+
+  - id: "zh-scribe"
+    name: "Zh Scribe"
+    role: "中文成文"
+    description: "公众号全流程、中文成文、读书笔记"
+    model: "minimax/MiniMax-M2.7"
+    sandbox_mode: "off"
+    allow_exec: false
+    channel_entry: "feishu_scribe"
+    subagents: []
+
+  - id: "tech-mentor"
+    name: "Tech Mentor"
+    role: "AI导师"
+    description: "技术选型、科技学习、前沿跟踪"
+    model: "minimax/MiniMax-M2.7"
+    sandbox_mode: "off"
+    allow_exec: false
+    channel_entry: "telegram_mentor"
+    subagents:
+      - "coder-hub"  # 可 spawn coder-hub
+
+  - id: "coder-hub"
+    name: "Coder Hub"
+    role: "编程助手"
+    description: "编程、代码生成与分析、CLI调用"
+    model: "minimax/MiniMax-M2.7"
+    sandbox_mode: "off"
+    allow_exec: true
+    channel_entry: null  # 仅限内部调用
+    subagents: []
+
+# ------------------------------------------------------------
+# 模型路由配置
+# ------------------------------------------------------------
+openclaw_models:
+  primary:
+    provider: "minimax"
+    model: "minimax/MiniMax-M2.7"
+    api_key_ref: "/MINIMAX_API_KEY"
+
+  fallback:
+    - provider: "modelstudio"
+      model: "modelstudio/qwen3.5-plus"
+      api_key_ref: "/MODELSTUDIO_API_KEY"
+    - provider: "modelstudio"
+      model: "modelstudio/kimi-k2.5"
+      api_key_ref: "/MODELSTUDIO_API_KEY"
+
+# ------------------------------------------------------------
+# 渠道配置
+# ------------------------------------------------------------
+# 注意：真实密钥留空，部署后手动填写
+openclaw_channels:
+  telegram:
+    - account: "chief"
+      bot_token: ""  # 部署后填写
+      bot_token_ref: "/TELEGRAM_CHIEF_BOT_TOKEN"
+      agent: "chief-of-staff"
+
+    - account: "personal"
+      bot_token: ""  # 部署后填写
+      bot_token_ref: "/TELEGRAM_PERSONAL_BOT_TOKEN"
+      agent: "life-hub"
+
+    - account: "mentor"
+      bot_token: ""  # 部署后填写
+      bot_token_ref: "/TELEGRAM_MENTOR_BOT_TOKEN"
+      agent: "tech-mentor"
+
+  feishu:
+    - account: "work"
+      app_id: ""  # 部署后填写
+      app_id_ref: "/FEISHU_WORK_APP_ID"
+      app_secret: ""  # 部署后填写
+      app_secret_ref: "/FEISHU_WORK_APP_SECRET"
+      agent: "work-hub"
+
+    - account: "scribe"
+      app_id: ""  # 部署后填写
+      app_id_ref: "/FEISHU_SCRIBE_APP_ID"
+      app_secret: ""  # 部署后填写
+      app_secret_ref: "/FEISHU_SCRIBE_APP_SECRET"
+      agent: "zh-scribe"
+
+# ------------------------------------------------------------
+# 多智能体协作配置
+# ------------------------------------------------------------
+openclaw_multigagent:
+  tools_profile: "full"
+  sessions_visibility: "all"
+  agent_to_agent_enabled: true
+
+# ------------------------------------------------------------
+# 安全加固配置
+# ------------------------------------------------------------
+security_hardening:
+  ssh:
+    disable_root_login: true
+    disable_password_auth: true
+    allow_tcp_forwarding: false
+    max_auth_tries: 3
+    client_alive_interval: 300
+    client_alive_count_max: 2
+
+  firewall:
+    enabled: true
+    allow_ssh: true
+    ssh_port: 22
+    allow_established: true
+    allow_loopback: true
+
+  swap:
+    enabled: true
+    size_gb: 4
+    file_path: "/swapfile"
+
+  fail2ban:
+    enabled: true
+    ssh_max_retries: 5
+    ssh_ban_time: 1800  # 30 分钟
+    ssh_find_time: 600  # 10 分钟
+
+  auto_updates:
+    enabled: true
+    automatic_reboot: false  # 不自动重启
+
+# ------------------------------------------------------------
+# 密钥模板配置
+# ------------------------------------------------------------
+secrets_templates:
+  runtime_secrets:
+    minimax_api_key: ""
+    modelstudio_api_key: ""
+    telegram_chief_bot_token: ""
+    telegram_personal_bot_token: ""
+    telegram_mentor_bot_token: ""
+    feishu_work_app_id: ""
+    feishu_work_app_secret: ""
+    feishu_scribe_app_id: ""
+    feishu_scribe_app_secret: ""
+    openclaw_gateway_token: ""
+
+  gateway_env:
+    MINIMAX_API_KEY: ""
+    MODELSTUDIO_API_KEY: ""
+    TELEGRAM_CHIEF_BOT_TOKEN: ""
+    TELEGRAM_PERSONAL_BOT_TOKEN: ""
+    TELEGRAM_MENTOR_BOT_TOKEN: ""
+    FEISHU_WORK_APP_ID: ""
+    FEISHU_WORK_APP_SECRET: ""
+    FEISHU_SCRIBE_APP_ID: ""
+    FEISHU_SCRIBE_APP_SECRET: ""
+    OPENCLAW_GATEWAY_TOKEN: ""
+
+# ------------------------------------------------------------
+# 备份配置
+# ------------------------------------------------------------
+backup_enabled: true
+backup_local_path: "docs/backups"
+backup_remote_path: "{{ openclaw_config_dir }}/backup"
+
+# ------------------------------------------------------------
+# 日志配置
+# ------------------------------------------------------------
+openclaw_log_level: "info"
+openclaw_log_file: "{{ openclaw_config_dir }}/gateway.log"

@@ -1,0 +1,80 @@
+# ============================================================
+# host_vars 示例 - 主机特定变量覆盖
+# ============================================================
+# 复制此文件为 host_vars/<hostname>.yml
+# 例如: host_vars/47.82.234.46.yml
+# ============================================================
+
+# ------------------------------------------------------------
+# 覆盖全局版本
+# ------------------------------------------------------------
+# openclaw_version: "2026.4.5"
+# nodejs_version: "24"
+
+# ------------------------------------------------------------
+# 覆盖系统配置
+# ------------------------------------------------------------
+# system_timezone: "America/New_York"
+# swap_size_gb: 8  # 更大的 swap
+
+# ------------------------------------------------------------
+# 覆盖 Agent 配置（示例：使用不同模型）
+# ------------------------------------------------------------
+# openclaw_agents:
+#   - id: "chief-of-staff"
+#     name: "Chief of Staff"
+#     role: "编排器"
+#     description: "跨域统筹、审批、系统维护"
+#     model: "modelstudio/qwen3.5-plus"  # 使用不同模型
+#     sandbox_mode: "off"
+#     allow_exec: true
+#     channel_entry: "telegram_chief"
+#     subagents:
+#       - "work-hub"
+#       - "venture-hub"
+#       - "life-hub"
+#       - "product-studio"
+#       - "zh-scribe"
+#       - "tech-mentor"
+#       - "coder-hub"
+
+# ------------------------------------------------------------
+# 覆盖安全加固（测试环境示例）
+# ------------------------------------------------------------
+# security_hardening:
+#   ssh:
+#     disable_root_login: true
+#     disable_password_auth: false  # 测试环境不禁用密码认证
+#     max_auth_tries: 5
+#   firewall:
+#     enabled: false  # 测试环境禁用防火墙
+#   fail2ban:
+#     enabled: false  # 测试环境禁用 fail2ban
+
+# ------------------------------------------------------------
+# 预检资源要求覆盖
+# ------------------------------------------------------------
+# min_memory_mb: 8192    # 要求 8GB 内存
+# min_cpu_cores: 4       # 要求 4 核心
+# min_disk_gb: 100       # 要求 100GB 磁盘
+
+# ------------------------------------------------------------
+# SSH 加固确认提示（生产环境建议启用）
+# ------------------------------------------------------------
+# confirm_ssh_hardening: true  # 部署时暂停确认
+
+# ------------------------------------------------------------
+# 密钥模板覆盖（如需自定义占位符）
+# ------------------------------------------------------------
+# secrets_templates:
+#   runtime_secrets:
+#     minimax_api_key: ""
+#     modelstudio_api_key: ""
+#     telegram_chief_bot_token: ""
+#     telegram_personal_bot_token: ""
+#     telegram_mentor_bot_token: ""
+#     feishu_work_app_id: ""
+#     feishu_work_app_secret: ""
+#     feishu_scribe_app_id: ""
+#     feishu_scribe_app_secret: ""
+#     openclaw_gateway_token: ""

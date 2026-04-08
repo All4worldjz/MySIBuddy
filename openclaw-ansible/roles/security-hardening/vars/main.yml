@@ -1,0 +1,21 @@
+---
+# security-hardening vars
+
+# SSH 配置
+sshd_config_file: "/etc/ssh/sshd_config"
+
+# 防火墙配置
+ufw_enabled: true
+firewalld_enabled: true
+
+# Swap 配置
+swap_file_path: "/swapfile"
+swap_size_gb: 4
+
+# fail2ban 配置
+fail2ban_config_file: "/etc/fail2ban/jail.local"
+fail2ban_log_file: "/var/log/fail2ban.log"
+
+# 自动更新配置
+unattended_upgrades_enabled: true
+dnf_automatic_enabled: true

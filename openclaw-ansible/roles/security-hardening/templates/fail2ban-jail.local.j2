@@ -1,0 +1,16 @@
+[DEFAULT]
+bantime = {{ security_hardening.fail2ban.ssh_ban_time | default(1800) }}
+findtime = {{ security_hardening.fail2ban.ssh_find_time | default(600) }}
+maxretry = {{ security_hardening.fail2ban.ssh_max_retries | default(5) }}
+
+[sshd]
+enabled = true
+port = {{ security_hardening.firewall.ssh_port | default('22') }}
+filter = sshd
+{% if ansible_os_family == "Debian" %}
+logpath = /var/log/auth.log
+{% else %}
+logpath = /var/log/secure
+{% endif %}
+maxretry = {{ security_hardening.fail2ban.ssh_max_retries | default(5) }}
+bantime = {{ security_hardening.fail2ban.ssh_ban_time | default(1800) }}

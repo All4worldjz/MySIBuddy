@@ -1,0 +1,37 @@
+# OpenClaw Ansible 项目
+*.retry
+*.pyc
+__pycache__/
+.ansible/
+
+# Inventory（敏感信息）
+inventory/hosts.ini
+
+# 备份文件
+docs/backups/
+*.tar.gz
+*.zip
+
+# 临时文件
+/tmp/
+*.tmp
+*.swp
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs
+*.log
+
+# Secrets（如果使用 Ansible Vault）
+*.vault.yml
+*.vault

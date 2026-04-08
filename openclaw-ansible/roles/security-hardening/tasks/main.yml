@@ -1,0 +1,338 @@
+---
+# security-hardening: 系统安全加固
+# - SSH 加固
+# - 防火墙配置
+# - Swap 配置
+# - fail2ban 配置
+# - 自动安全更新
+
+# ============================================================
+# SSH 加固
+# ============================================================
+- name: 配置 SSH 加固
+  block:
+    - name: 验证 SSH 密钥认证可用（防锁死保护）
+      command: ssh -o BatchMode=yes -o ConnectTimeout=5 localhost echo ok
+      register: ssh_key_auth_test
+      failed_when: false
+      changed_when: false
+      when: security_hardening.ssh.disable_password_auth | default(false)
+
+    - name: 阻止 SSH 加固（密钥认证不可用）
+      fail:
+        msg: |
+          🚫 SSH 加固已阻止！
+          
+          原因: SSH 密钥认证不可用，禁用密码认证将导致锁死服务器。
+          
+          请先执行以下步骤：
+          1. 配置 SSH 密钥:
+             ssh-copy-id {{ ansible_user }}@{{ inventory_hostname }}
+          
+          2. 测试密钥登录:
+             ssh -o BatchMode=yes {{ ansible_user }}@{{ inventory_hostname }}
+          
+          3. 确认成功后重新运行部署。
+          
+          如果这是测试环境，可以临时禁用 SSH 加固:
+          在 host_vars 中设置:
+            security_hardening:
+              ssh:
+                disable_password_auth: false
+      when:
+        - security_hardening.ssh.disable_password_auth | default(false)
+        - ssh_key_auth_test is defined
+        - ssh_key_auth_test.rc != 0
+
+    - name: 确认 SSH 加固安全
+      pause:
+        prompt: |
+          ⚠️  即将执行 SSH 安全加固：
+          - 禁用 root 登录
+          - 禁用密码认证
+          - 仅允许密钥登录
+          
+          请确认您已通过 SSH 密钥成功连接到此服务器。
+          如果不确定，请按 Ctrl+C 取消，先测试密钥登录。
+          
+          按 Enter 继续，或 Ctrl+C 取消。
+      when:
+        - security_hardening.ssh.disable_password_auth | default(false)
+        - confirm_ssh_hardening | default(false) | bool
+
+    - name: 备份 sshd_config
+      copy:
+        src: /etc/ssh/sshd_config
+        dest: "/etc/ssh/sshd_config.backup.{{ ansible_date_time.iso8601_basic_short }}"
+        remote_src: true
+        force: false
+
+    - name: 禁用 root 登录
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^PermitRootLogin"
+        line: "PermitRootLogin no"
+        state: present
+      when: security_hardening.ssh.disable_root_login | default(true) | bool
+      notify: restart sshd
+
+    - name: 禁用密码认证
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^PasswordAuthentication"
+        line: "PasswordAuthentication no"
+        state: present
+      when: security_hardening.ssh.disable_password_auth | default(false) | bool
+      notify: restart sshd
+
+    - name: 设置最大认证尝试次数
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^MaxAuthTries"
+        line: "MaxAuthTries {{ security_hardening.ssh.max_auth_tries | default(3) }}"
+        state: present
+      notify: restart sshd
+
+    - name: 配置 ClientAlive 间隔
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^ClientAliveInterval"
+        line: "ClientAliveInterval {{ security_hardening.ssh.client_alive_interval | default(300) }}"
+        state: present
+      notify: restart sshd
+
+    - name: 配置 ClientAlive 最大计数
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^ClientAliveCountMax"
+        line: "ClientAliveCountMax {{ security_hardening.ssh.client_alive_count_max | default(2) }}"
+        state: present
+      notify: restart sshd
+
+    - name: 禁用 TCP 转发
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^AllowTcpForwarding"
+        line: "AllowTcpForwarding no"
+        state: present
+      when: security_hardening.ssh.allow_tcp_forwarding | default(false) | bool == false
+      notify: restart sshd
+
+  tags:
+    - security
+    - ssh
+
+# ============================================================
+# 防火墙配置
+# ============================================================
+- name: 配置 UFW 防火墙（Debian/Ubuntu）
+  block:
+    - name: 启用 UFW
+      ufw:
+        state: enabled
+        policy: deny
+        logging: "on"
+
+    - name: 允许 SSH
+      ufw:
+        rule: allow
+        port: "{{ security_hardening.firewall.ssh_port | default('22') }}"
+        proto: tcp
+
+    # 注意: UFW 默认已允许已建立连接（conntrack 自动处理）
+    # 不需要额外规则
+
+  when:
+    - security_hardening.firewall.enabled | default(true) | bool
+    - ansible_os_family == "Debian"
+  tags:
+    - security
+    - firewall
+
+- name: 配置 firewalld（RHEL/CentOS/Rocky）
+  block:
+    - name: 启用 firewalld
+      service:
+        name: firewalld
+        state: started
+        enabled: true
+
+    - name: 允许 SSH
+      firewalld:
+        port: "{{ security_hardening.firewall.ssh_port | default('22') }}/tcp"
+        permanent: true
+        state: enabled
+        immediate: true
+
+  when:
+    - security_hardening.firewall.enabled
+    - ansible_os_family == "RedHat"
+  tags:
+    - security
+    - firewall
+
+# ============================================================
+# Swap 配置
+# ============================================================
+- name: 配置 Swap
+  block:
+    - name: 检查 swap 文件是否存在
+      stat:
+        path: "{{ security_hardening.swap.file_path }}"
+      register: swap_file
+
+    - name: 创建 Swap 文件
+      command: >
+        dd if=/dev/zero of={{ security_hardening.swap.file_path }}
+        bs=1G count={{ security_hardening.swap.size_gb }}
+      when: not swap_file.stat.exists
+      args:
+        creates: "{{ security_hardening.swap.file_path }}"
+
+    - name: 设置 Swap 文件权限
+      file:
+        path: "{{ security_hardening.swap.file_path }}"
+        mode: "0600"
+
+    - name: 格式化 Swap 文件
+      command: "mkswap {{ security_hardening.swap.file_path }}"
+      when: not swap_file.stat.exists
+
+    - name: 启用 Swap 文件
+      command: "swapon {{ security_hardening.swap.file_path }}"
+      when: not swap_file.stat.exists
+
+    - name: 添加 Swap 到 fstab
+      lineinfile:
+        path: /etc/fstab
+        line: "{{ security_hardening.swap.file_path }} none swap sw 0 0"
+        state: present
+
+  when: security_hardening.swap.enabled
+  tags:
+    - security
+    - swap
+
+# ============================================================
+# fail2ban 配置
+# ============================================================
+- name: 配置 fail2ban
+  block:
+    - name: 创建 fail2ban jail.local
+      template:
+        src: "fail2ban-jail.local.j2"
+        dest: "/etc/fail2ban/jail.local"
+        owner: root
+        group: root
+        mode: "0644"
+      notify: restart fail2ban
+
+    - name: 启用 fail2ban 服务
+      service:
+        name: fail2ban
+        state: started
+        enabled: true
+
+  when: security_hardening.fail2ban.enabled
+  tags:
+    - security
+    - fail2ban
+
+# ============================================================
+# 自动安全更新
+# ============================================================
+- name: 配置自动安全更新（Debian/Ubuntu）
+  block:
+    - name: 启用 unattended-upgrades
+      debconf:
+        name: unattended-upgrades
+        question: unattended-upgrades/enable_auto_updates
+        value: "true"
+        vtype: boolean
+
+    - name: 启用 unattended-upgrades 服务
+      service:
+        name: unattended-upgrades
+        state: started
+        enabled: true
+
+  when:
+    - security_hardening.auto_updates.enabled
+    - ansible_os_family == "Debian"
+  tags:
+    - security
+    - auto-updates
+
+- name: 配置自动安全更新（RHEL/CentOS/Rocky）
+  block:
+    - name: 启用 dnf-automatic
+      lineinfile:
+        path: /etc/dnf/automatic.conf
+        regexp: "^apply_updates"
+        line: "apply_updates = yes"
+        state: present
+
+    - name: 启用 dnf-automatic 定时器
+      service:
+        name: dnf-automatic.timer
+        state: started
+        enabled: true
+
+  when:
+    - security_hardening.auto_updates.enabled | default(true) | bool
+    - ansible_os_family == "RedHat"
+  tags:
+    - security
+    - auto-updates
+
+# ============================================================
+# User Linger 配置（保证 user-level systemd 服务持续运行）
+# ============================================================
+- name: 启用 user linger 保证 Gateway 持续运行
+  command: "loginctl enable-linger {{ openclaw_user | default('admin') }}"
+  become: true
+  changed_when: false
+  tags:
+    - security
+    - linger
+
+# ============================================================
+# NTP 时钟同步
+# ============================================================
+- name: 配置 NTP 时钟同步（Debian/Ubuntu）
+  block:
+    - name: 安装 chrony
+      apt:
+        name: chrony
+        state: present
+
+    - name: 启用 chrony 服务
+      service:
+        name: chrony
+        state: started
+        enabled: true
+
+  when:
+    - ansible_os_family == "Debian"
+  tags:
+    - security
+    - ntp
+
+- name: 配置 NTP 时钟同步（RHEL/CentOS/Rocky）
+  block:
+    - name: 安装 chrony
+      dnf:
+        name: chrony
+        state: present
+
+    - name: 启用 chrony 服务
+      service:
+        name: chronyd
+        state: started
+        enabled: true
+
+  when:
+    - ansible_os_family == "RedHat"
+  tags:
+    - security
+    - ntp
