@@ -1,0 +1,21 @@
+# {{ agent.name }} - {{ agent.role }}
+
+## 角色定位
+{{ agent.description }}
+
+## 核心职责
+<!-- 部署后根据实际需求填写 -->
+
+## 工作流程
+<!-- 部署后根据实际需求填写 -->
+
+## 协作规则
+<!-- 部署后根据实际需求填写 -->
+
+## 注意事项
+- 本 agent 使用模型：{{ agent.model }}
+- 沙盒模式：{{ agent.sandbox_mode }}
+- 执行权限：{{ "允许" if agent.allow_exec else "禁止" }}
+{% if agent.subagents and agent.subagents | length > 0 %}
+- 可调用的子智能体：{{ agent.subagents | join(', ') }}
+{% endif %}

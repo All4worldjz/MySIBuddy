@@ -7,8 +7,7 @@
   setup:
     gather_subset:
       - min
-      - memory
-      - processors
+      - hardware
       - devices
   tags: always
 
@@ -40,26 +39,26 @@
     - resource-check
 
 - name: 检查磁盘空间 >= {{ min_disk_gb | default(50) }}GB
-  fail:
-    msg: >
-      ❌ 磁盘空间不足！当前: {{ (ansible_mounts | selectattr('mount', 'equalto', '/') | map(attribute='size_total') | first | int / 1073741824) | round(1) }}GB,
-      最低要求: {{ min_disk_gb | default(50) }}GB
-      
-      建议: 升级 VPS 存储到至少 50GB。
-  when: >
-    (ansible_mounts | selectattr('mount', 'equalto', '/') | map(attribute='size_available') | first | int)
-    < ((min_disk_gb | default(50)) * 1073741824)
-  tags:
-    - preflight
-    - resource-check
+  block:
+    - name: 获取根分区可用空间
+      shell: "df --output=avail -B1 / | tail -1 | tr -d ' '"
+      register: disk_avail
+      changed_when: false
 
-- name: 显示资源检查通过
-  debug:
-    msg: >
-      ✅ 资源检查通过:
-      - 内存: {{ ansible_memory_mb.real.total }}MB
-      - CPU: {{ ansible_processor_vcpus }} 核心
-      - 磁盘可用: {{ (ansible_mounts | selectattr('mount', 'equalto', '/') | map(attribute='size_available') | first | int / 1073741824) | round(1) }}GB
+    - name: 验证磁盘空间
+      fail:
+        msg: >
+          ❌ 磁盘空间不足！当前: {{ (disk_avail.stdout | int / 1073741824) | round(1) }}GB,
+          最低要求: {{ min_disk_gb | default(50) }}GB
+
+          建议: 升级 VPS 存储到至少 {{ min_disk_gb | default(50) }}GB。
+      when: disk_avail.stdout | int < ((min_disk_gb | default(50)) * 1073741824)
+
+  rescue:
+    - name: 磁盘检查警告（无法获取信息）
+      debug:
+        msg: "⚠️  无法获取磁盘信息，跳过检查（容器环境可能不支持）"
+
   tags:
     - preflight
     - resource-check
@@ -227,13 +226,14 @@
     msg: >
       ⚠️  SSH 密钥认证测试失败！
       如果继续部署并禁用密码认证，可能导致无法登录。
-      
+
       建议:
       1. 先配置 SSH 密钥: ssh-copy-id {{ ansible_user }}@{{ inventory_hostname }}
       2. 测试密钥登录: ssh -o BatchMode=yes {{ ansible_user }}@{{ inventory_hostname }}
       3. 确认成功后再运行部署
   when:
     - ssh_key_check is defined
+    - ssh_key_check.rc is defined
     - ssh_key_check.rc != 0
   tags:
     - preflight
@@ -246,17 +246,19 @@
   debug:
     msg: |
       ✅ 前置检查全部通过！
-      
+
       📊 系统信息:
-      - 操作系统: {{ ansible_distribution }} {{ ansible_distribution_version }}
-      - 内核: {{ ansible_kernel }}
-      - 架构: {{ ansible_architecture }}
-      
+      - 操作系统: {{ ansible_distribution | default('unknown') }} {{ ansible_distribution_version | default('') }}
+      - 内核: {{ ansible_kernel | default('unknown') }}
+      - 架构: {{ ansible_architecture | default('unknown') }}
+
       💻 资源配置:
-      - CPU: {{ ansible_processor_vcpus }} 核心
-      - 内存: {{ ansible_memory_mb.real.total }}MB
-      - 磁盘可用: {{ (ansible_mounts | selectattr('mount', 'equalto', '/') | map(attribute='size_available') | first | int / 1073741824) | round(1) }}GB
-      
+      - CPU: {{ ansible_processor_vcpus | default('unknown') }} 核心
+      - 内存: {{ ansible_memory_mb.real.total | default('unknown') }}MB
+      {% if disk_avail is defined and disk_avail.stdout | default('') | length > 0 %}
+      - 磁盘可用: {{ (disk_avail.stdout | int / 1073741824) | round(1) }}GB
+      {% endif %}
+
       🚀 准备开始部署...
   tags:
     - preflight

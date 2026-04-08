@@ -90,10 +90,28 @@
   shell: |
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-    npm install -g {{ item }}
+    npm install -g {{ item }} 2>&1
   become_user: "{{ openclaw_user }}"
   timeout: 180  # 3 分钟超时
+  register: plugin_install_result
+  failed_when: false
+  changed_when: plugin_install_result.rc == 0
   loop: "{{ openclaw_plugins_allow }}"
+  tags:
+    - openclaw
+    - plugins
+
+- name: 显示插件安装结果
+  debug:
+    msg: |
+      {% for result in plugin_install_result.results | default([]) %}
+      {% if result.rc == 0 %}
+      ✅ {{ result.item }}: 安装成功
+      {% else %}
+      ⚠️  {{ result.item }}: 安装失败（跳过，不影响核心功能）
+      {% endif %}
+      {% endfor %}
+  when: plugin_install_result is defined
   tags:
     - openclaw
     - plugins

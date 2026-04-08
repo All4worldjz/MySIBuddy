@@ -62,7 +62,20 @@ Assume human partners may be non-technical.
 - Plugin policy must explicitly preserve required stock plugins.
 - Never overwrite production `openclaw.json` with an incomplete object; candidate configs must preserve the full current topology unless the user explicitly wants topology change.
 
-## 6. Definition of Done
+## 6. Alias Mapping (2026-04-08 Standard)
+
+When interacting within this repository or across agents, use these aliases:
+
+| Agent ID | Alias |
+| :--- | :--- |
+| `chief-of-staff` | 小春 |
+| `tech-mentor` | 大师 |
+| `work-hub` | 金牛 |
+| `zh-scribe` | 水哥 |
+| `life-hub` | 小机 |
+| `coder-hub` | 小码哥 |
+
+## 7. Definition of Done
 
 A task is complete only when all are true:
 

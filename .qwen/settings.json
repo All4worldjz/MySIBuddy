@@ -32,7 +32,25 @@
       "Bash(python3 *)",
       "WebFetch(open.feishu.cn)",
       "Bash(head *)",
-      "Bash(./scripts/backup_openclaw_config.sh *)"
+      "Bash(./scripts/backup_openclaw_config.sh *)",
+      "Bash(tree *)",
+      "Bash(xargs *)",
+      "Bash(cp *)",
+      "Bash(uname *)",
+      "Bash(sw_vers *)",
+      "Bash(which *)",
+      "Bash(docker info *)",
+      "Bash(docker compose version)",
+      "Bash(docker ps *)",
+      "Bash(docker manifest *)",
+      "Bash(docker compose up *)",
+      "Bash(docker compose logs *)",
+      "Bash(docker logs *)",
+      "Bash(docker compose down *)",
+      "Bash(docker compose rm *)",
+      "Bash(docker exec *)",
+      "Bash(timeout *)",
+      "Bash(gtimeout *)"
     ]
   },
   "$version": 3

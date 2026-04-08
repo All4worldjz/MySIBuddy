@@ -15,16 +15,16 @@ This file provides foundational mandates and operational context for Gemini CLI 
 
 The system operates as a coordinated cluster of 8 agents:
 
-| Agent | Role | Input Channels |
-|-------|------|----------------|
-| `chief-of-staff` | Orchestrator / Global Visibility | Telegram (chief) |
-| `work-hub` | Professional / Work Tasks | Feishu (work) |
-| `venture-hub` | Entrepreneurship / Projects | Telegram (personal group) |
-| `life-hub` | Personal / Daily Life | Telegram (personal) |
-| `product-studio` | Product Design / Strategy | Internal Only |
-| `zh-scribe` | Chinese Content Writing | Feishu (scribe) |
-| `tech-mentor` | AI & Technical Guidance | Telegram (mentor) |
-| `coder-hub` | Programming & CLI Assistant | Local (Gemini/Qwen CLI) |
+| Agent | Alias | Role | Input Channels |
+|-------|-------|------|----------------|
+| `chief-of-staff` | 小春 | Orchestrator / Global Visibility | Telegram (chief) |
+| `work-hub` | 金牛 | Professional / Work Tasks | Feishu (work) |
+| `venture-hub` | - | Entrepreneurship / Projects | Telegram (personal group) |
+| `life-hub` | 小机 | Personal / Daily Life | Telegram (personal) |
+| `product-studio` | - | Product Design / Strategy | Internal Only |
+| `zh-scribe` | 水哥 | Chinese Content Writing | Feishu (scribe) |
+| `tech-mentor` | 大师 | AI & Technical Guidance | Telegram (mentor) |
+| `coder-hub` | 小码哥 | Programming & CLI Assistant | Local (Gemini/Qwen CLI) |
 
 ### Security Model (2026-04-07 Milestone)
 - **Containerized Sandboxing:** 6 Hub Agents (`work`, `venture`, `life`, `product`, `zh-scribe`, `tech-mentor`) run with `sandbox.mode = "all"` using Docker containers to prevent host penetration.

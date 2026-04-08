@@ -44,21 +44,12 @@ services:
     command: >
       bash -c "
         apt-get update &&
-        apt-get install -y --no-install-recommends
-          openssh-server
-          sudo
-          curl
-          wget
-          jq
-          ansible
-          python3-apt
-          iproute2
-          dnsutils &&
+        apt-get install -y --no-install-recommends openssh-server sudo curl wget jq ansible python3-apt iproute2 dnsutils &&
         mkdir -p /var/run/sshd &&
         echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config &&
         echo 'root:root' | chpasswd &&
         /usr/sbin/sshd &&
-        echo 'Container ready. Run: docker exec -it openclaw-ansible-test bash' &&
+        echo 'Container ready.' &&
         tail -f /dev/null
       "
     

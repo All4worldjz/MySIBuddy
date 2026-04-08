@@ -1,0 +1,113 @@
+# Docker 测试变量覆盖（完整）
+min_memory_mb: 512
+min_cpu_cores: 1
+min_disk_gb: 5
+confirm_ssh_hardening: false
+preflight_check_ports: []
+
+system_timezone: "UTC"
+openclaw_user: root
+openclaw_home: /root
+openclaw_config_dir: /root/.openclaw
+openclaw_config_file: /root/.openclaw/openclaw.json
+openclaw_secrets_file: /root/.openclaw/runtime-secrets.json
+openclaw_gateway_env: /root/.openclaw/gateway.env
+openclaw_systemd_service: openclaw-gateway
+openclaw_version: "2026.4.5"
+nodejs_version: "24"
+nvm_version: "0.39.7"
+nvm_install_path: "/root/.nvm"
+nodejs_install_method: "nvm"
+
+openclaw_plugins_allow:
+  - "openclaw-lark"
+  - "telegram"
+  - "duckduckgo"
+  - "minimax"
+  - "openai"
+  - "qwen"
+
+openclaw_plugins_deny:
+  - "feishu"
+
+openclaw_multigagent:
+  tools_profile: "full"
+  sessions_visibility: "all"
+  agent_to_agent_enabled: true
+
+openclaw_log_level: "info"
+openclaw_log_file: "/root/.openclaw/gateway.log"
+
+# Agent 配置（精简版用于测试）
+openclaw_agents:
+  - id: "chief-of-staff"
+    name: "Chief of Staff"
+    role: "编排器"
+    description: "跨域统筹、审批、系统维护"
+    model: "minimax/MiniMax-M2.7"
+    sandbox_mode: "off"
+    allow_exec: true
+    channel_entry: "telegram_chief"
+    subagents:
+      - "work-hub"
+  - id: "work-hub"
+    name: "Work Hub"
+    role: "工作中枢"
+    description: "正式工作事务"
+    model: "minimax/MiniMax-M2.7"
+    sandbox_mode: "off"
+    allow_exec: false
+    channel_entry: "feishu_work"
+    subagents: []
+
+openclaw_models:
+  primary:
+    provider: "minimax"
+    model: "minimax/MiniMax-M2.7"
+    api_key_ref: "/MINIMAX_API_KEY"
+  fallback:
+    - provider: "modelstudio"
+      model: "modelstudio/qwen3.5-plus"
+      api_key_ref: "/MODELSTUDIO_API_KEY"
+
+openclaw_channels:
+  telegram:
+    - account: "chief"
+      bot_token_ref: "/TELEGRAM_CHIEF_BOT_TOKEN"
+      agent: "chief-of-staff"
+  feishu:
+    - account: "work"
+      app_id_ref: "/FEISHU_WORK_APP_ID"
+      app_secret_ref: "/FEISHU_WORK_APP_SECRET"
+      agent: "work-hub"
+
+secrets_templates:
+  runtime_secrets:
+    minimax_api_key: ""
+    modelstudio_api_key: ""
+    telegram_chief_bot_token: ""
+    feishu_work_app_id: ""
+    feishu_work_app_secret: ""
+    openclaw_gateway_token: ""
+  gateway_env:
+    MINIMAX_API_KEY: ""
+    MODELSTUDIO_API_KEY: ""
+    TELEGRAM_CHIEF_BOT_TOKEN: ""
+    FEISHU_WORK_APP_ID: ""
+    FEISHU_WORK_APP_SECRET: ""
+    OPENCLAW_GATEWAY_TOKEN: ""
+
+security_hardening:
+  ssh:
+    disable_root_login: false
+    disable_password_auth: false
+    max_auth_tries: 10
+    allow_tcp_forwarding: true
+  firewall:
+    enabled: false
+  fail2ban:
+    enabled: false
+  swap:
+    enabled: false
+  auto_updates:
+    enabled: false

@@ -9,16 +9,16 @@
 ### 核心架构
 
 **8 智能体集群：**
-| Agent | 角色 | 主责域 | 渠道入口 |
-|-------|------|--------|----------|
-| `chief-of-staff` | 编排器 | 跨域统筹、审批、系统维护 | Telegram chief |
-| `work-hub` | 工作中枢 | 正式工作事务（不含公众号） | Feishu work |
-| `venture-hub` | 创业中枢 | 创业战略/PMF/MVP（不含技术选型） | Telegram personal (群组) |
-| `life-hub` | 生活中枢 | 生活财务事务（不含学习安排） | Telegram personal |
-| `product-studio` | 产品设计 | PRD、产品设计（后台specialist） | 无直接入口 |
-| `zh-scribe` | 中文成文 | 公众号全流程、中文成文、读书笔记 | Feishu scribe |
-| `tech-mentor` | AI导师 | 技术选型、科技学习、前沿跟踪 | Telegram mentor |
-| `coder-hub` | 编程助手 | 编程、代码生成与分析、CLI调用 | 无直接入口 (仅限内部调用) |
+| Agent | 别名 | 角色 | 主责域 | 渠道入口 |
+|-------|------|------|--------|----------|
+| `chief-of-staff` | 小春 | 编排器 | 跨域统筹、审批、系统维护 | Telegram chief |
+| `work-hub` | 金牛 | 工作中枢 | 正式工作事务（不含公众号） | Feishu work |
+| `venture-hub` | - | 创业中枢 | 创业战略/PMF/MVP（不含技术选型） | Telegram personal (群组) |
+| `life-hub` | 小机 | 生活中枢 | 生活财务事务（不含学习安排） | Telegram personal |
+| `product-studio` | - | 产品设计 | PRD、产品设计（后台specialist） | 无直接入口 |
+| `zh-scribe` | 水哥 | 中文成文 | 公众号全流程、中文成文、读书笔记 | Feishu scribe |
+| `tech-mentor` | 大师 | AI导师 | 技术选型、科技学习、前沿跟踪 | Telegram mentor |
+| `coder-hub` | 小码哥 | 编程助手 | 编程、代码生成与分析、CLI调用 | 无直接入口 (仅限内部调用) |
 
 **通信渠道：**
 - Telegram：3 个账号（`chief`、`personal`、`mentor`）
@@ -220,16 +220,16 @@ ssh admin@47.82.234.46 'journalctl --user -u openclaw-gateway -n 30 --no-pager'
 
 **所有 agents 移除沙盒限制**，通过工具权限控制实现安全隔离：
 
-| Agent | Sandbox | Exec 权限 | 说明 |
-|-------|---------|-----------|------|
-| `chief-of-staff` | off | ✅ 允许 | 编排器，需要系统级访问 |
-| `coder-hub` | off | ✅ 允许 | 编程助手，需要 CLI 访问（gemini/qwen CLI） |
-| `tech-mentor` | off | ❌ 禁止 | AI导师，需 spawn coder-hub |
-| `work-hub` | off | ❌ 禁止 | 工作中枢 |
-| `venture-hub` | off | ❌ 禁止 | 创业中枢 |
-| `life-hub` | off | ❌ 禁止 | 生活中枢 |
-| `product-studio` | off | ❌ 禁止 | 产品设计 |
-| `zh-scribe` | off | ❌ 禁止 | 中文成文 |
+| Agent | 别名 | Sandbox | Exec 权限 | 说明 |
+|-------|------|---------|-----------|------|
+| `chief-of-staff` | 小春 | off | ✅ 允许 | 编排器，需要系统级访问 |
+| `coder-hub` | 小码哥 | off | ✅ 允许 | 编程助手，需要 CLI 访问（gemini/qwen CLI） |
+| `tech-mentor` | 大师 | off | ❌ 禁止 | AI导师，需 spawn coder-hub |
+| `work-hub` | 金牛 | off | ❌ 禁止 | 工作中枢 |
+| `venture-hub` | - | off | ❌ 禁止 | 创业中枢 |
+| `life-hub` | 小机 | off | ❌ 禁止 | 生活中枢 |
+| `product-studio` | - | off | ❌ 禁止 | 产品设计 |
+| `zh-scribe` | 水哥 | off | ❌ 禁止 | 中文成文 |
 
 **配置示例**：
 ```json

@@ -41,9 +41,34 @@
   when: ansible_os_family == "RedHat"
   tags: packages
 
+- name: 检查当前时区
+  shell: "cat /etc/timezone 2>/dev/null || timedatectl show --property=Timezone --value 2>/dev/null || echo 'unknown'"
+  register: current_timezone
+  changed_when: false
+  failed_when: false
+
 - name: 配置时区
-  timezone:
-    name: "{{ system_timezone }}"
+  block:
+    - name: 设置时区（systemd 系统）
+      timezone:
+        name: "{{ system_timezone }}"
+  rescue:
+    - name: 备用方法：手动配置时区
+      block:
+        - name: 写入 /etc/timezone
+          copy:
+            content: "{{ system_timezone }}\n"
+            dest: /etc/timezone
+            mode: "0644"
+
+        - name: 更新 /etc/localtime
+          file:
+            src: "/usr/share/zoneinfo/{{ system_timezone }}"
+            dest: /etc/localtime
+            state: link
+            force: true
+  when: current_timezone.stdout | trim != system_timezone
+
   tags: timezone
 
 - name: 确保 admin 用户存在

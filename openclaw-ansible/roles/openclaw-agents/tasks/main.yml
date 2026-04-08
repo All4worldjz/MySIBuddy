@@ -30,6 +30,8 @@
     owner: "{{ openclaw_user }}"
     group: "{{ openclaw_user }}"
     mode: "0644"
+  vars:
+    agent: "{{ item.item }}"
   loop: "{{ agent_config_check.results }}"
   when: not item.stat.exists
   loop_control:
@@ -43,6 +45,8 @@
     owner: "{{ openclaw_user }}"
     group: "{{ openclaw_user }}"
     mode: "0644"
+  vars:
+    agent: "{{ item.item }}"
   loop: "{{ agent_config_check.results }}"
   when: not item.stat.exists
   loop_control:
@@ -78,6 +82,8 @@
     owner: "{{ openclaw_user }}"
     group: "{{ openclaw_user }}"
     mode: "0644"
+  vars:
+    agent: "{{ item.item }}"
   loop: "{{ auth_profiles_check.results }}"
   when: not item.stat.exists
   loop_control:
@@ -100,6 +106,8 @@
     owner: "{{ openclaw_user }}"
     group: "{{ openclaw_user }}"
     mode: "0644"
+  vars:
+    agent: "{{ item.item }}"
   loop: "{{ models_check.results }}"
   when: not item.stat.exists
   loop_control:

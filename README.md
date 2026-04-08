@@ -51,16 +51,16 @@ MySiBuddy/
 
 ### 智能体拓扑（8个）
 
-| Agent | 角色 | 渠道入口 | Exec 权限 |
-|-------|------|----------|-----------|
-| `chief-of-staff` | 编排器 | Telegram chief | ✅ |
-| `coder-hub` | 编程助手 | 内部调用 | ✅ |
-| `work-hub` | 工作中枢 | Feishu work | ❌ |
-| `venture-hub` | 创业中枢 | Telegram personal (群组) | ❌ |
-| `life-hub` | 生活中枢 | Telegram personal | ❌ |
-| `product-studio` | 产品设计 | 无直接入口 | ❌ |
-| `zh-scribe` | 中文成文 | Feishu scribe | ❌ |
-| `tech-mentor` | AI导师 | Telegram mentor | ❌ |
+| Agent | 别名 | 角色 | 渠道入口 | Exec 权限 |
+|-------|------|------|----------|-----------|
+| `chief-of-staff` | 小春 | 编排器 | Telegram chief | ✅ |
+| `coder-hub` | 小码哥 | 编程助手 | 内部调用 | ✅ |
+| `work-hub` | 金牛 | 工作中枢 | Feishu work | ❌ |
+| `venture-hub` | - | 创业中枢 | Telegram personal (群组) | ❌ |
+| `life-hub` | 小机 | 生活中枢 | Telegram personal | ❌ |
+| `product-studio` | - | 产品设计 | 无直接入口 | ❌ |
+| `zh-scribe` | 水哥 | 中文成文 | Feishu scribe | ❌ |
+| `tech-mentor` | 大师 | AI导师 | Telegram mentor | ❌ |
 
 ### 模型路由
 

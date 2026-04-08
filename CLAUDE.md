@@ -10,9 +10,10 @@ The production system runs OpenClaw `2026.4.2` on host `admin@47.82.234.46`.
 
 ## Architecture
 
-**7-Agent Cluster:**
-- `chief-of-staff`: Orchestrator with global session visibility, admin privileges, search delegation
-- `work-hub`, `venture-hub`, `life-hub`, `product-studio`, `zh-scribe`, `tech-mentor`: Domain-specific sandboxed workers
+**8-Agent Cluster:**
+- `chief-of-staff` (小春): Orchestrator with global session visibility, admin privileges, search delegation
+- `coder-hub` (小码哥): Programming & CLI Assistant, non-sandboxed
+- `work-hub` (金牛), `venture-hub`, `life-hub` (小机), `product-studio`, `zh-scribe` (水哥), `tech-mentor` (大师): Domain-specific workers
 
 **Tiered Security:**
 - `chief-of-staff`: `sandbox.mode = off`, full tool access
