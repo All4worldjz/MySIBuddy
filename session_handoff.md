@@ -1,14 +1,96 @@
 # Session Handoff
 
-Last updated: 2026-04-07 (Tasks审计错误清理与系统健康检查)
+Last updated: 2026-04-08 (飞书网盘安全操作脚本开发)
 
 ## Current repo state
 
 - Branch: `dev`
-- Latest changes:
-  - **Tasks审计错误清理**: 10 errors → 0 errors ✅
-  - **Gateway性能优化**: 985ms → 35ms (重启后)
-  - **基线配置确认**: Sandbox策略确认为正确基线
+- Latest commit: `d4c5e41` - feat: 添加飞书网盘安全操作脚本和受保护文件夹配置
+- **新功能**：飞书网盘创建/删除/移动文件夹脚本（带安全策略）
+
+---
+
+## 2026-04-08: 飞书网盘安全操作脚本开发 (重要里程碑)
+
+### 新增功能
+
+| 脚本 | 功能 | 关键特性 |
+|------|------|----------|
+| `feishu_create_folder.sh` | 创建文件夹 | 重名检测、审计日志、受保护警告 |
+| `feishu_delete_folder.sh` | 删除文件夹 | 软删除到回收站、受保护检查、交互确认、--dry-run |
+| `feishu_move_folder.sh` | 移动文件夹 | 重名检测、受保护检查、交互确认、--dry-run |
+| `lib/feishu_drive_guardrails.sh` | 安全策略库 | 配置读取、回收站管理、审计日志 |
+
+### 受保护文件夹配置
+
+```json
+{
+  "protected_tokens": [
+    "RfSrf8oMYlMyQTdbW0ZcGSE1nNb",  // CC文件柜
+    "Xl7tfFnwQl9n6vd8Hl5c8Vy2nBd"   // 小春文件柜
+  ],
+  "protected_names": ["CC文件柜", "小春文件柜", "回收站", "📁测试归档"],
+  "recycle_bin": {
+    "token": "XcTHfLy7clpx51dBomLcvA7XnTf",
+    "parent_token": "RfSrf8oMYlMyQTdbW0ZcGSE1nNb",
+    "auto_cleanup_days": 30
+  }
+}
+```
+
+### 回收站机制
+
+- **位置**：CC文件柜下
+- **Token**：`XcTHfLy7clpx51dBomLcvA7XnTf`
+- **自动清理**：飞书系统30天后自动永久删除
+- **软删除流程**：删除 → 移至回收站 → 30天保留期 → 自动清理
+
+### 使用示例
+
+```bash
+# 创建文件夹
+bash /home/admin/.openclaw/scripts/feishu_create_folder.sh "项目文档" "Xl7tfFnwQl9n6vd8Hl5c8Vy2nBd"
+
+# 预览删除
+bash /home/admin/.openclaw/scripts/feishu_delete_folder.sh --token <token> --dry-run
+
+# 软删除（推荐）
+bash /home/admin/.openclaw/scripts/feishu_delete_folder.sh --token <token> --force
+
+# 预览移动
+bash /home/admin/.openclaw/scripts/feishu_move_folder.sh --token <token> --dest <目标token> --dry-run
+```
+
+### 关键经验（详见 docs/troubleshooting-feishu-drive-api.md）
+
+1. **API 端点差异**：
+   - 错误：`/folders/{token}/children` (404)
+   - 正确：`/files?folder_token={token}`
+
+2. **创建文件夹参数**：`folder_token` 必须在 Body 中传递
+
+3. **元信息字段差异**：返回 `title` 而非 `name`，`doc_type` 而非 `type`
+
+4. **根目录限制**：无法在根目录直接创建文件夹，需指定父文件夹
+
+### 已更新的 Agent MEMORY.md
+
+| Agent | 状态 |
+|-------|------|
+| chief-of-staff | ✅ 已添加飞书网盘操作规范 |
+| work-hub | ✅ 已添加 |
+| venture-hub | ✅ 已添加 |
+| life-hub | ✅ 已添加 |
+| product-studio | ✅ 已添加 |
+| zh-scribe | ✅ 已添加 |
+| tech-mentor | ✅ 已添加 |
+| coder-hub | ⚠️ MEMORY.md 不存在 |
+
+### 审计日志位置
+
+```
+/home/admin/.openclaw/logs/feishu_drive_operations.log
+```
 
 ---
 

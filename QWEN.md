@@ -35,6 +35,14 @@
 - 防火墙：仅允许 SSH(22) + 已建立连接 + 本地回环
 - Swap：4GB swapfile 配置完成
 
+**飞书网盘受保护文件夹（2026-04-08 配置）：**
+| 名称 | Token | 说明 |
+|------|-------|------|
+| CC文件柜 | `RfSrf8oMYlMyQTdbW0ZcGSE1nNb` | CC个人文件柜（禁止删除/移动） |
+| 小春文件柜 | `Xl7tfFnwQl9n6vd8Hl5c8Vy2nBd` | 共享工作目录（禁止删除/移动） |
+| 回收站 | `XcTHfLy7clpx51dBomLcvA7XnTf` | 软删除目标（30天自动清理） |
+| 📁测试归档 | `TZa9f0KaQldDPXdDnX6cF3K7nme` | 测试文件夹存放处 |
+
 ---
 
 ## 关键文件
@@ -52,6 +60,16 @@
 - `safe_openclaw_rollback.sh`：恢复已知良好的配置备份
 - `lib_openclaw_guardrails.sh`：防护逻辑共享库
 - `backup_openclaw_config.sh`：配置备份脚本（备份配置/记忆/系统文件到本地仓库）
+
+### 飞书网盘操作脚本（`scripts/`）
+- `feishu_create_folder.sh`：创建文件夹（重名检测、审计日志）
+- `feishu_delete_folder.sh`：删除文件夹（软删除到回收站、受保护检查、--dry-run）
+- `feishu_move_folder.sh`：移动文件夹（重名检测、受保护检查、--dry-run）
+- `lib/feishu_drive_guardrails.sh`：飞书网盘安全策略共享库
+- `update_agent_memory_feishu_ops.sh`：更新 Agent MEMORY.md 的脚本
+
+### 配置文件（`config/`）
+- `protected_folders.json`：受保护文件夹配置（Token、名称、回收站设置）
 
 ### 备份技能（`skills/backup-openclaw/`）
 - `SKILL.md`：OpenClaw 配置备份技能文档
@@ -273,6 +291,18 @@ ssh admin@47.82.234.46 'journalctl --user -u openclaw-gateway -n 30 --no-pager'
 - **原因**：OpenClaw 安全设计，防止沙盒逃逸
 - **解决方案**：将所有 agents 设为 unsandboxed，通过 `tools.deny` 禁止非编程 agents 的 exec 权限
 - **详细记录**：`docs/troubleshooting_sandbox_spawn.md`
+
+### 飞书 Drive API 端点差异（2026-04-08 发现）
+- **错误端点**：`GET /open-apis/drive/v1/folders/{token}/children` 返回 404
+- **正确端点**：`GET /open-apis/drive/v1/files?folder_token={token}`
+- **响应字段差异**：返回 `data.files` 而非 `data.items`
+- **元信息字段**：返回 `title` 而非 `name`，`doc_type` 而非 `type`
+
+### 飞书创建文件夹参数位置（2026-04-08 发现）
+- **错误**：`folder_token` 作为 Query 参数传递
+- **正确**：`folder_token` 必须在 Body 中传递
+- **根目录限制**：无法在根目录直接创建文件夹，必须指定父文件夹 token
+- **详细记录**：`docs/troubleshooting-feishu-drive-api.md`
 
 ---
 
