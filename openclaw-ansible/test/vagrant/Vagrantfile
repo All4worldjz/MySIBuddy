@@ -1,0 +1,72 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# ============================================================
+# OpenClaw Ansible - Vagrant 测试环境
+# ============================================================
+# 用途: 在本地 VM 中完整测试 OpenClaw 部署 playbook
+# 前置: VirtualBox + Vagrant 已安装
+#
+# 快速开始:
+#   vagrant up                    # 启动 VM
+#   vagrant ssh                   # 确认连接
+#   ansible-playbook playbooks/deploy.yml -i test/vagrant/inventory.ini
+#   vagrant ssh -c "openclaw status --deep"
+#   vagrant destroy -f            # 清理
+# ============================================================
+
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  # Ubuntu 22.04 LTS
+  config.vm.box = "ubuntu/jammy64"
+
+  # 可选: 使用 Ubuntu 24.04
+  # config.vm.box = "ubuntu/noble64"
+
+  # 可选: 使用 Debian 12
+  # config.vm.box = "debian/bookworm64"
+
+  config.vm.hostname = "openclaw-test"
+
+  # 资源配置（满足最低要求: 2C/4GB/50GB）
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = "openclaw-ansible-test"
+    vb.memory = 4096        # 4GB 内存
+    vb.cpus = 2             # 2 核心
+    vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+    vb.customize ["modifyvm", :id, "--ioapic", "on"]
+  end
+
+  # Parallels provider (macOS Apple Silicon 替代 VirtualBox)
+  # config.vm.provider "parallels" do |prl|
+  #   prl.name = "openclaw-ansible-test"
+  #   prl.memory = 4096
+  #   prl.cpus = 2
+  # end
+
+  # VMware provider
+  # config.vm.provider "vmware_desktop" do |vmware|
+  #   vmware.name = "openclaw-ansible-test"
+  #   vmware.vmx["memsize"] = "4096"
+  #   vmware.vmx["numvcpus"] = "2"
+  # end
+
+  # 网络配置
+  config.vm.network "private_network", type: "dhcp"
+  # 可选: 端口转发（用于测试 Gateway）
+  # config.vm.network "forwarded_port", guest: 3000, host: 3000
+
+  # SSH 配置
+  config.ssh.timeout = 30
+  config.ssh.insert_key = true
+
+  # 可选: 自动运行 Ansible（注释掉以便手动逐步测试）
+  # config.vm.provision "ansible" do |ansible|
+  #   ansible.playbook = "playbooks/deploy.yml"
+  #   ansible.inventory_path = "test/vagrant/inventory.ini"
+  #   ansible.tags = "preflight,system-prep,nodejs,openclaw"
+  #   ansible.limit = "all"
+  #   ansible.verbose = "v"
+  # end
+end

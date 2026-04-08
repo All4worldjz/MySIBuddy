@@ -1,0 +1,70 @@
+# OpenClaw Ansible - Docker 测试环境
+# ============================================================
+# 用途: 快速验证文件生成类角色（约 60% 覆盖）
+# 不兼容: systemd/SSH 加固/fail2ban/user linger
+#
+# 快速开始:
+#   docker compose up -d
+#   docker compose exec openclaw-test bash
+#   # 在容器内运行:
+#   ansible-playbook /ansible/playbooks/deploy.yml \
+#     -i /ansible/test/docker/inventory.ini \
+#     -c local \
+#     --tags preflight,system-prep,nodejs,openclaw,agents,channels,secrets,config
+# ============================================================
+
+services:
+  openclaw-test:
+    # 基础 Ubuntu 22.04 镜像
+    image: ubuntu:22.04
+    
+    # 需要特权模式以模拟 systemd（有限支持）
+    # 注意: 即使 privileged，loginctl 仍然不可用
+    privileged: true
+    
+    container_name: openclaw-ansible-test
+    
+    # 挂载 Ansible 项目（只读）
+    volumes:
+      - ../../:/ansible:ro
+    
+    # 工作目录
+    working_dir: /ansible
+    
+    # 环境变量
+    environment:
+      - DEBIAN_FRONTEND=noninteractive
+      - container=docker
+    
+    # 端口（可选）
+    ports:
+      - "2222:22"
+    
+    # 保持容器运行
+    command: >
+      bash -c "
+        apt-get update &&
+        apt-get install -y --no-install-recommends
+          openssh-server
+          sudo
+          curl
+          wget
+          jq
+          ansible
+          python3-apt
+          iproute2
+          dnsutils &&
+        mkdir -p /var/run/sshd &&
+        echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config &&
+        echo 'root:root' | chpasswd &&
+        /usr/sbin/sshd &&
+        echo 'Container ready. Run: docker exec -it openclaw-ansible-test bash' &&
+        tail -f /dev/null
+      "
+    
+    # 资源限制（可选，模拟低配环境）
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 2G
+    #       cpus: '1'
