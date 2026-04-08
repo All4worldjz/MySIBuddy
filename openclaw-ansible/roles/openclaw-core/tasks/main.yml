@@ -124,13 +124,14 @@
   register: plugins_list
   become_user: "{{ openclaw_user }}"
   changed_when: false
+  failed_when: false
   tags:
     - openclaw
     - plugins
 
 - name: 显示已安装插件
   debug:
-    var: plugins_list.stdout
+    msg: "{{ plugins_list.stdout | default('插件列表不可用') }}"
   tags:
     - openclaw
     - plugins

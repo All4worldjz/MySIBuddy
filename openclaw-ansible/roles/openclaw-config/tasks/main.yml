@@ -13,14 +13,13 @@
     owner: "{{ openclaw_user }}"
     group: "{{ openclaw_user }}"
     mode: "0644"
-    validate: "jq '.' %s > /dev/null"
   become_user: "{{ openclaw_user }}"
   tags:
     - config
     - openclaw-json
 
 - name: 验证 JSON 语法
-  command: "jq '.' {{ openclaw_config_dir }}/openclaw.json.new"
+  shell: "jq '.' {{ openclaw_config_dir }}/openclaw.json.new > /dev/null 2>&1"
   become_user: "{{ openclaw_user }}"
   changed_when: false
   register: json_validate
