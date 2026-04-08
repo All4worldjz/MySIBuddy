@@ -8,7 +8,49 @@ Last updated: 2026-04-08 (智能体别名全局同步与文档更新)
 - Latest commit: `d4c5e41` - feat: 添加飞书网盘安全操作脚本和受保护文件夹配置
 - **新变更**：全系统智能体别名（Alias）映射同步
 
+- `GEMINI.md`: 架构表格新增 Alias 列
+- `README.md`: 核心架构表格新增别名列
+- `CLAUDE.md`: 架构描述同步别名
+- `QWEN.md`: 核心架构与 Sandbox 配置表格同步别名
+
 ---
+
+## 2026-04-08: 远端服务器中间备份文件清理与安全审计
+
+### 中间备份清理
+- **操作**: 清理远端服务器 `47.82.234.46` 全部中间备份文件 (~112 个，~587K)
+- **删除范围**:
+  - 所有 `.pre-*` 文件 (workspace 文档备份、主配置备份)
+  - 所有 `.bak` 文件 (cron、主配置备份)
+  - `backup/` 目录
+  - `memory/backups/` 目录
+  - workspace docs 下的备份目录 (`agents-config-backup-*`、`agents-memory-backup-*` 等)
+  - `.tgz` 脚本备份
+- **验证**: 残留 0 个备份文件
+
+### 密钥安全审计
+- **本地仓库**: ✅ 未发现真实明文密钥（所有匹配均为模板/文档/测试占位符）
+- **远端服务器**: ✅ 符合双层密钥架构，文件权限 `600`，无泄露风险
+  - `runtime-secrets.json` + `gateway.env` 正确配置
+  - `openclaw.json` 使用 SecretRef 引用，无硬编码密钥
+  - systemd 通过 `EnvironmentFiles` 加载
+
+---
+
+## 2026-04-08: OpenClaw 架构深度体检与安全审计确认
+
+### 深度体检 (Health & Scan Report)
+执行了全方位的底层探针 (`openclaw status --deep`, `docker stats`, `top`)，确认当前生产服务器 (`47.82.234.46`) 运行极为稳固：
+1. **硬件开销极低**：内存充裕 (余 2.4GB)，磁盘占用 53%，网关响应 984ms。
+2. **LLM 预加载高性价比**：主模型 MiniMax-M2.7 (205k) 结合系统强化的重度缓存机制，在 `work-hub` 等频繁访问节点持续保持 38% - 87% 的上下文预留率（Cache Hits），大幅降低流转成本。
+3. **架构透明化完毕**：查明了 OpenClaw Daemon 底层借助了 Systemd User 模式维持进程，通过 SQLite 持久化本地日志和 Memory-vec 索引。
+
+### 用户确决 (By-Design)
+排查发现两处 `security audit` 的 WARN 级报告：
+- **WARN 1**: 多用户下的 `groupPolicy="allowlist"` 风险 (`Potential multi-user setup detected`)
+- **WARN 2**: 全局 tools (`openclaw-lark`) 与高容忍度配置 (`Extension plugin tools reachable`)
+
+**结论**：鉴于系统目前已经通过“**全局 unsandbox (off) + 封印 exec 权限**”来解决 A2A (Agent-to-Agent) Spawn 路由失败的问题。在用户与我的充分讨论后，确决 **忽略并接受上述两个预警**。当前的基线是最适合业务流和功能拓扑的平衡版，不进行任何生产 JSON 修改。
 
 ## 2026-04-08: 智能体别名全局同步 (映射标准确立)
 
