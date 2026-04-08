@@ -29,7 +29,10 @@
       "Bash(.id *)",
       "Bash(.tools.alsoallow) = [\"group:runtime\"]\\' *)",
       "Bash(\\' *)",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "WebFetch(open.feishu.cn)",
+      "Bash(head *)",
+      "Bash(./scripts/backup_openclaw_config.sh *)"
     ]
   },
   "$version": 3

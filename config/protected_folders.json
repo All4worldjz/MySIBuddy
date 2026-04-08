@@ -1,0 +1,56 @@
+{
+  "version": "1.0.0",
+  "updated_at": "2026-04-07T23:35:00+08:00",
+  "protected_tokens": [
+    "RfSrf8oMYlMyQTdbW0ZcGSE1nNb",
+    "Xl7tfFnwQl9n6vd8Hl5c8Vy2nBd"
+  ],
+  "protected_names": [
+    "CC文件柜",
+    "小春文件柜",
+    "回收站",
+    "📁测试归档"
+  ],
+  "folders": {
+    "cc_cabinet": {
+      "name": "CC文件柜",
+      "token": "RfSrf8oMYlMyQTdbW0ZcGSE1nNb",
+      "description": "CC个人文件柜，包含战略、AI研究、个人事务等分类",
+      "structure": {
+        "My_KM_Vault": "Karpathy LLM Wiki 协议实现",
+        "📁06_个人备份": "个人数据备份",
+        "📁07_历史归档": "历史文件归档",
+        "📁05_团队管理与战略": "团队管理和战略规划",
+        "📁02_政府AI与政务业务": "政府AI和政务业务",
+        "📁04_AI与大模型研究": "AI和大模型研究",
+        "📁03_出差与个人事务": "出差和个人事务",
+        "📁01_金山云战略与业务": "金山云战略和业务"
+      }
+    },
+    "xiaochun_cabinet": {
+      "name": "小春文件柜",
+      "token": "Xl7tfFnwQl9n6vd8Hl5c8Vy2nBd",
+      "description": "chief-of-staff、work-hub、zh-scribe 三者共用的文件交换目录",
+      "structure": {
+        "📁测试归档": "所有测试性质的文件夹放此处"
+      }
+    },
+    "recycle_bin": {
+      "name": "回收站",
+      "token": "XcTHfLy7clpx51dBomLcvA7XnTf",
+      "parent_token": "RfSrf8oMYlMyQTdbW0ZcGSE1nNb",
+      "description": "软删除文件夹，30天后自动清理",
+      "auto_cleanup_days": 30,
+      "status": "active",
+      "created_at": "2026-04-08T00:02:00+08:00"
+    }
+  },
+  "deletion_policy": {
+    "default_action": "soft_delete",
+    "soft_delete_dest": "recycle_bin",
+    "auto_cleanup_days": 30,
+    "require_approval": true,
+    "approver_role": "CC",
+    "audit_log_path": "/home/admin/.openclaw/logs/folder_deletions.log"
+  }
+}
