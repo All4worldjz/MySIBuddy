@@ -36,8 +36,13 @@ openclaw_systemd_service: "openclaw-gateway"
 # ------------------------------------------------------------
 # OpenClaw Plugins
 # ------------------------------------------------------------
+# 重要：飞书插件策略（来自 QWEN.md 已知陷阱）
+# 1. 安装 openclaw-lark（飞书官方插件，通过 npm 全局安装）
+# 2. 抑制 OpenClaw 内置的 feishu 插件（deny 列表中已包含）
+# 3. 同一 Feishu 应用不能同时出现在顶层 appId/appSecret 和 accounts 中
+#    否则会导致消息间歇性丢失
 openclaw_plugins_allow:
-  - "openclaw-lark"
+  - "openclaw-lark"   # 飞书官方插件（必须安装）
   - "telegram"
   - "duckduckgo"
   - "minimax"
@@ -45,7 +50,36 @@ openclaw_plugins_allow:
   - "qwen"
 
 openclaw_plugins_deny:
-  - "feishu"
+  - "feishu"          # 抑制 OpenClaw 内置的 feishu 插件（避免与 openclaw-lark 冲突）
+
+# 飞书插件配置（重要！）
+# ============================================================
+# 关键信息（来自 QWEN.md 已知陷阱）：
+# 1. 必须安装 openclaw-lark（飞书官方插件，npm 全局安装）
+#    - 通过 npm install -g openclaw-lark 安装
+#    - 这是飞书官方维护的 OpenClaw 插件
+# 2. 必须抑制 OpenClaw 内置的 feishu 插件
+#    - plugins.deny 中已包含 "feishu"
+#    - 避免 openclaw-lark 和内置 feishu 冲突
+# 3. 同一 Feishu 应用不能同时出现在：
+#    - 顶层 channels.feishu.appId/appSecret
+#    - channels.feishu.accounts.work
+#    否则会导致消息间歇性丢失
+# ============================================================
+openclaw_feishu_plugin: "openclaw-lark"
+openclaw_feishu_plugin_npm_package: "openclaw-lark"
+# 注意: plugins.deny 中已包含 "feishu"，会抑制 OpenClaw 内置的 feishu 插件
+# openclaw-lark 在 plugins.allow 中，会被正确安装
+
+# 飞书渠道配置（注意：不要配置顶层 appId/appSecret）
+# 只在 accounts 中配置真实账号（work、scribe）
+# 详见 QWEN.md "Known Pitfalls - Feishu 重复账号问题"
+# 
+# ⚠️  重要：
+# - 飞书官方插件是 openclaw-lark（通过 npm 全局安装）
+# - 必须抑制 OpenClaw 内置的 feishu 插件（plugins.deny 已配置）
+# - 同一 Feishu 应用不能同时出现在顶层 appId/appSecret 和 accounts 中
+#   否则会导致消息间歇性丢失
 
 # ------------------------------------------------------------
 # 8 Agent 配置

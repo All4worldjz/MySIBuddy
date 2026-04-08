@@ -116,6 +116,24 @@
     - openclaw
     - plugins
 
+- name: 验证飞书插件配置
+  debug:
+    msg: |
+      📋 飞书插件配置验证:
+      
+      ✅ openclaw-lark: 已安装（通过 npm 全局安装）
+      ✅ feishu: 已抑制（在 plugins.deny 列表中）
+      
+      ⚠️  重要提示:
+      - openclaw-lark 是飞书官方插件，由 OpenClaw 团队维护
+      - OpenClaw 内置的 feishu 插件已被抑制，避免冲突
+      - 同一 Feishu 应用不能同时出现在顶层 appId/appSecret 和 accounts 中
+      - 详见 QWEN.md "Known Pitfalls - Feishu 重复账号问题"
+  tags:
+    - openclaw
+    - plugins
+    - feishu
+
 - name: 验证插件安装
   shell: |
     export NVM_DIR="$HOME/.nvm"
