@@ -521,3 +521,100 @@ openclaw cron update --job-id 6f7d1857-85ab-4d77-a5f5-334f3391a1c2 --enabled fal
 - **Files**: `docs/guardrails-checklist.md`, `workspace-chief/AGENTS.md`
 - **URL**: https://github.com/All4worldjz/MySIBuddy/commit/32a98f9
 
+---
+
+## Memory 系统健康监控实施记录（2026-04-09）
+
+### 背景
+春哥要求将记忆系统健康状态纳入系统监控和报警体系，确保 Memory 系统的文件数、分块数、向量索引、全文搜索、缓存状态等关键指标可被实时监控和告警。
+
+### 实施内容
+
+#### 1. system_health_report.sh v2.2.0（每小时报告）
+**新增函数**: `collect_memory_health_compact()`
+
+**检查指标**:
+| 指标 | 说明 | 告警逻辑 |
+|------|------|---------|
+| 文件数 | Memory 文件总数 | 仅展示，无告警 |
+| 分块数 | 记忆分块总数 | 仅展示，无告警 |
+| 向量索引 | 向量后端状态 | `unknown`/`disabled` → 🟡警告 |
+| 全文搜索 | FTS 状态 | `!=ready` → 🔴紧急 |
+| 缓存命中 | 缓存条目数 | `=0` → 🟡警告 |
+
+**输出格式**:
+```
+**🧠 Memory 系统**
+  文件：🟢 42 | 分块：280
+  向量：🟡 unknown | 全文：🟢 ready | 缓存：🟢 149
+```
+
+#### 2. system_health_alert.sh v1.1.0（30 分钟告警）
+**新增函数**: `check_memory()`
+
+**告警条件**:
+| 条件 | 等级 | 去重周期 |
+|------|------|---------|
+| FTS != ready | 🔴 紧急 | 30 分钟 |
+| Vector != ready | 🟡 警告 | 30 分钟 |
+
+**告警示例**:
+- `🔴 Memory FTS 不可用：disabled`
+- `🟡 Memory 向量索引：unknown（语义搜索可能不可用）`
+
+### 技术实现
+
+**解析逻辑**:
+```bash
+# 从 openclaw status --deep 输出中提取 Memory 行
+mem_line=$(echo "$status" | grep -i "memory" | head -1)
+
+# 使用 grep -oP 解析各字段
+files=$(echo "$mem_line" | grep -oP '\d+(?= files)')
+chunks=$(echo "$mem_line" | grep -oP '\d+(?= chunks)')
+vector=$(echo "$mem_line" | grep -oP 'vector \K[a-z]+')
+fts=$(echo "$mem_line" | grep -oP 'fts \K[a-z]+')
+cache_size=$(echo "$mem_line" | grep -oP 'cache on \(\K\d+')
+```
+
+**超时处理**:
+- `openclaw status --deep` 超时从 5s 提升至 15s（避免采集失败）
+
+### Git 记录
+- **Commit**: `1cc7128`
+- **Message**: "feat: 新增 Memory 系统健康检查（v2.2.0）"
+- **Files**: `scripts/system_health_report.sh`, `scripts/system_health_alert.sh`
+- **版本**: v2.2.0 (report) / v1.1.0 (alert)
+
+### 已知缺陷
+1. `openclaw status --deep` 在生产环境超时（>8s）→ **已修复 (v2.2.1)**
+2. 向量索引状态 `unknown` 可能为正常（未配置 embedding 模型）→ 目前仅🟡警告，不🔴告警
+
+### 根因分析 (2026-04-09 13:06)
+
+**问题现象**: 健康报告中 Memory 系统显示 "⚠️ 无法获取 Memory 状态"
+
+**诊断过程**:
+1. ✅ Memory SQLite 数据库正常：`/home/admin/.openclaw/memory/chief-of-staff.sqlite` (11MB, 283 chunks)
+2. ✅ 工作区 Memory 文件正常：41 个 `.md` 文件
+3. ✅ 配置正确：`"memory": {"backend": "builtin"}`
+4. ❌ `openclaw status --deep` 超时（15s timeout 仍失败）
+
+**根因**: `openclaw status --deep` 命令在某些环境下执行缓慢，可能原因：
+- 尝试连接外部服务（向量后端、FTS 索引服务等）
+- 全 Agent Memory 状态轮询（8 个 Agent SQLite 文件）
+- 网络超时或锁等待
+
+**解决方案**: v2.2.1 引入降级检查
+- 方案 A: `openclaw status --deep` (timeout 8s)
+- 方案 B: SQLite 直连（查 `chunks` 表 + 文件计数）
+
+**降级后能力**:
+- ✅ 文件数、分块数（核心健康指标）
+- ⚠️ 向量/FTS/缓存状态（降级后显示 N/A）
+
+### 下一步计划
+- [x] ~~推送远程仓库~~ → **已完成** (Git: `be43cb0`)
+- [ ] 验证告警触发逻辑（需模拟 FTS 故障）
+- [ ] 可选：增加 Memory 文件数/分块数突增检测（防异常写入）
+
