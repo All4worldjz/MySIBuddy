@@ -146,6 +146,49 @@ check_gateway() {
     fi
 }
 
+# --- 检查 Memory 系统 ---
+check_memory() {
+    command -v openclaw &>/dev/null || return
+    
+    local status
+    status=$(timeout 5 openclaw status --deep 2>/dev/null || echo "")
+    
+    local mem_line
+    mem_line=$(echo "$status" | grep -i "memory" | head -1 || echo "")
+    
+    if [[ -n "$mem_line" ]]; then
+        # 检查 FTS 状态（全文搜索）
+        local fts
+        fts=$(echo "$mem_line" | grep -oP 'fts \K[a-z]+' || echo "unknown")
+        
+        if [[ "$fts" != "ready" ]]; then
+            local last_alert
+            last_alert=$(get_last_alert "mem_fts_not_ready")
+            local now
+            now=$(date +%s)
+            if ((now - last_alert > COOLDOWN_MIN * 60)); then
+                ALERTS+=("🔴 Memory FTS 不可用：${fts}")
+                set_alert "mem_fts_not_ready" "$now"
+            fi
+        fi
+        
+        # 检查向量索引状态（警告级别）
+        local vector
+        vector=$(echo "$mem_line" | grep -oP 'vector \K[a-z]+' || echo "unknown")
+        
+        if [[ "$vector" != "ready" ]]; then
+            local last_alert
+            last_alert=$(get_last_alert "mem_vector_unknown")
+            local now
+            now=$(date +%s)
+            if ((now - last_alert > COOLDOWN_MIN * 60)); then
+                ALERTS+=("🟡 Memory 向量索引：${vector}（语义搜索可能不可用）")
+                set_alert "mem_vector_unknown" "$now"
+            fi
+        fi
+    fi
+}
+
 # --- 发送告警 ---
 send_alerts() {
     if [[ ${#ALERTS[@]} -eq 0 ]]; then
@@ -169,6 +212,7 @@ main() {
     check_mem
     check_load
     check_gateway
+    check_memory  # 新增：Memory 系统健康检查
     send_alerts
 }
 

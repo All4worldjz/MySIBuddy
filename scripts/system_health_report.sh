@@ -491,6 +491,56 @@ collect_openclaw_compact() {
     echo "$status"|grep -qi "telegram" && tg_s="🟢"
     echo "  频道：飞书${fs_s} Telegram${tg_s}"
     echo ""
+    
+    # Memory 系统健康检查（新增）
+    collect_memory_health_compact
+}
+
+# -----------------------------------------------
+# Memory 系统健康检查（新增）
+# -----------------------------------------------
+
+collect_memory_health_compact() {
+    echo "**🧠 Memory 系统**"
+    command -v openclaw &>/dev/null || { echo "  ⚠️ CLI 未安装"; return; }
+    
+    local status
+    status=$(timeout 15 openclaw status --deep 2>/dev/null || echo "")
+    
+    # 提取 Memory 行
+    local mem_line
+    mem_line=$(echo "$status" | grep -i "memory" | head -1 || echo "")
+    
+    if [[ -n "$mem_line" ]]; then
+        # 解析：42 files · 280 chunks · sources memory · plugin memory-core · vector unknown · fts ready · cache on (149)
+        local files chunks vector fts cache_size
+        files=$(echo "$mem_line" | grep -oP '\d+(?= files)' || echo "?")
+        chunks=$(echo "$mem_line" | grep -oP '\d+(?= chunks)' || echo "?")
+        vector=$(echo "$mem_line" | grep -oP 'vector \K[a-z]+' || echo "unknown")
+        fts=$(echo "$mem_line" | grep -oP 'fts \K[a-z]+' || echo "unknown")
+        cache_size=$(echo "$mem_line" | grep -oP 'cache on \(\K\d+' || echo "0")
+        
+        # 信号判断
+        local vec_s="🟢" fts_s="🟢" cache_s="🟢"
+        [[ "$vector" != "ready" ]] && vec_s="🟡"
+        [[ "$fts" != "ready" ]] && fts_s="🔴"
+        ((cache_size > 0)) && cache_s="🟢" || cache_s="🟡"
+        
+        echo "  文件：🟢 ${files} | 分块：${chunks}"
+        echo "  向量：${vec_s} ${vector} | 全文：${fts_s} ${fts} | 缓存：${cache_s} ${cache_size}"
+        
+        # 告警判断
+        if [[ "$fts" != "ready" ]]; then
+            ALERT_OC_MEM_FTS="🔴"
+            ((HAS_CRIT++)) || true
+        elif [[ "$vector" != "ready" ]]; then
+            ALERT_OC_MEM_VEC="🟡"
+            ((HAS_WARN++)) || true
+        fi
+    else
+        echo "  ⚠️ 无法获取 Memory 状态"
+    fi
+    echo ""
 }
 
 main "$@"
