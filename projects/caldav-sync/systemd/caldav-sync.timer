@@ -1,0 +1,11 @@
+[Unit]
+Description=Run CalDAV sync every 10 minutes
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=10min
+Unit=caldav-sync.service
+Persistent=true
+
+[Install]
+WantedBy=timers.target
