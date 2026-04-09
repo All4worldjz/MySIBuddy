@@ -1,0 +1,11 @@
+# KM Vault — Python 依赖
+# 安装：pip install -r requirements.txt
+# =============================================
+# 用途：飞书知识库同步、Wiki 编译、Cron 调度
+
+feishu-sdk>=1.0.0        # 飞书 SDK（API 调用必需）
+requests>=2.31.0         # HTTP 请求
+croniter>=1.4.0         # Cron 表达式解析
+
+# 运行时依赖（系统自带，无需 pip install）
+# 标准库：json, subprocess, datetime, pathlib, os, re, sys, time, sqlite3
