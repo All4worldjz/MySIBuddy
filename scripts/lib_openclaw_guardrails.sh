@@ -37,7 +37,7 @@ errors = []
 expected_agents = ["chief-of-staff", "coder-hub", "life-hub", "product-studio", "tech-mentor", "venture-hub", "work-hub", "zh-scribe"]
 expected_telegram = ["chief", "mentor", "personal"]
 expected_feishu = ["scribe", "work"]
-expected_allow = ["duckduckgo", "minimax", "openai", "openclaw-lark", "qwen", "telegram"]
+expected_allow = ["duckduckgo", "memory-wiki", "minimax", "openai", "openclaw-lark", "qwen", "telegram"]
 expected_deny = ["feishu"]
 
 agents = [a.get("id") for a in d.get("agents", {}).get("list", [])]
