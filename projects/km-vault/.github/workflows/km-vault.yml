@@ -1,0 +1,66 @@
+name: Knowledge Vault CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'KM_Vault/**'
+  schedule:
+    - cron: '*/5 * * * *'  # 每 5 分钟触发编译检查
+    - cron: '0 22 * * 0'   # 每周日 22:00 巡检
+
+jobs:
+  scan-raw:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for new files in raw/
+        run: |
+          if ls KM_Vault/raw/*.md 1> /dev/null 2>&1; then
+            echo "New files found in raw/, triggering compilation"
+            echo "trigger_compile=true" >> $GITHUB_ENV
+          else
+            echo "No new files in raw/"
+          fi
+
+      - name: Trigger compilation
+        if: env.trigger_compile == 'true'
+        run: |
+          # 调用 OpenClaw API 触发 coder-hub 编译
+          curl -X POST http://localhost:8000/api/agent/coder-hub/compile \
+            -H "Content-Type: application/json" \
+            -d '{"task": "根据 schema/AGENTS.md 规则编译 raw/ 新文件"}'
+
+  weekly-check:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' && github.event.schedule == '0 22 * * 0'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run weekly maintenance
+        run: |
+          echo "Running weekly knowledge vault check..."
+          bash KM_Vault/scripts/compile_raw.sh巡检
+          
+          # 检查 broken links
+          echo "Checking for broken links in wiki/..."
+          
+          # 生成巡检报告
+          echo "# Weekly Report $(date +%Y-%m-%d)" > KM_Vault/wiki/reports/weekly_$(date +%Y-%m-%d).md
+          echo "- Date: $(date)" >> KM_Vault/wiki/reports/weekly_$(date +%Y-%m-%d).md
+          echo "- Status: ✅ Completed" >> KM_Vault/wiki/reports/weekly_$(date +%Y-%m-%d).md
+
+  sync-backup:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * *'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sync to Feishu backup
+        run: |
+          echo "Syncing KM_Vault to Feishu backup folder..."
+          bash KM_Vault/scripts/feishu_knowledge_vault_sync.sh

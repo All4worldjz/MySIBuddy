@@ -1,0 +1,35 @@
+# 凭据与密钥
+*.token.json
+*.key
+*.pem
+*.p12
+*.pfx
+.env
+.env.local
+.env.production
+
+# 凭据配置
+feishu_app_secret.json
+feishu_user_token.json
+lark_credentials.json
+*_credentials.json
+*_token.json
+
+# 日志
+*.log
+logs/
+
+# 临时文件
+*.tmp
+*.bak
+*.swp
+*~
+
+# macOS 资源文件
+._*
+
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/

@@ -1,0 +1,7 @@
+.env
+.vault_config.json
+raw/
+wiki/
+node_modules/
+dist/
+*.log

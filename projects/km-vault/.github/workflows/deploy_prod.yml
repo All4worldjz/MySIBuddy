@@ -1,0 +1,75 @@
+name: Deploy My_KM_Vault to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deploy environment'
+        required: false
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+          - development
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Build Docker image
+        run: |
+          cd /home/admin/.openclaw/workspace-tech-mentor/KM_Vault
+          docker build -t km-vault:latest .
+          docker tag km-vault:latest km-vault:${{ github.sha }}
+
+      - name: Run container
+        run: |
+          # 停止旧容器
+          docker rm -f km-vault-runner 2>/dev/null || true
+          
+          # 启动新容器
+          docker run -d \
+            --name km-vault-runner \
+            --restart unless-stopped \
+            -v "/home/admin/.openclaw/workspace-tech-mentor/KM_Vault":"/app/vault" \
+            -e "TZ=Asia/Shanghai" \
+            -e "PYTHONUNBUFFERED=1" \
+            km-vault:latest
+
+      - name: Verify deployment
+        run: |
+          sleep 5
+          echo "=== Container Status ==="
+          docker ps | grep km-vault
+          
+          echo "=== Container Logs (last 20 lines) ==="
+          docker logs km-vault-runner 2>&1 | tail -20 || echo "No logs yet"
+          
+          echo "=== Cron Jobs ==="
+          docker exec km-vault-runner crontab -l
+
+      - name: Send notification
+        if: always()
+        run: |
+          echo "Deploy completed at $(date)"
+          echo "Container: km-vault-runner"
+          echo "Status: ${{ job.status }}"

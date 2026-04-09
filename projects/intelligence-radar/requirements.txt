@@ -1,0 +1,16 @@
+# Intelligence Radar — Python 依赖
+# 安装：pip install -r requirements.txt
+# =============================================
+
+# 核心依赖（必需）
+feedparser>=6.0.10         # RSS/Atom 订阅解析（blog_sensor 用）
+
+# 可选依赖（功能增强，如需请取消注释）
+# requests>=2.31.0          # HTTP 请求（web_sensor 如需）
+# arxiv>=2.0.0              # arXiv 论文抓取
+# praw>=7.7.1               # Reddit API（如需集成 Reddit）
+# python-telegram-bot>=20.7 # Telegram 推送（如需直接 Bot 推送）
+
+# 运行时依赖（系统自带，无需 pip install）
+# 标准库：json, subprocess, collections, datetime, pathlib, hashlib,
+#         math, os, re, sys, time, typing, pathlib, re

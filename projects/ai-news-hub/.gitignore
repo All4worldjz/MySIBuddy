@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+venv/
+.venv/
+env/
+.env
+
+# 数据与日志
+data/*.db
+data/*.log
+data/daily_*.txt
+data/push_pending_*
+
+# 测试临时文件
+test_*.py
+quick_test.py
