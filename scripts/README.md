@@ -4,7 +4,8 @@
 
 | 脚本 | 用途 | 版本 |
 |-----|------|------|
-| `system_health_report.sh` | 系统健康监控报告 | v2.1.0 |
+| `system_health_report.sh` | 系统健康监控报告（每小时） | v2.1.0 |
+| `system_health_alert.sh` | 系统健康异常告警（每 30 分钟） | v1.0.0 |
 | `feishu_create_folder.sh` | 飞书文件夹创建 | v1.0 |
 | `feishu_delete_folder.sh` | 飞书文件夹删除 | v1.0 |
 | `feishu_move_folder.sh` | 飞书文件夹移动 | v1.0 |
@@ -57,6 +58,34 @@ bash /home/admin/.openclaw/scripts/system_health_report.sh
 **🖥️ CPU**   🟢 总使用率：3% | 空闲：97%
 **💾 内存**  🟢 1.4/3.4 GB (41.4%) | 可用：2.0 GB
 ```
+
+---
+
+## system_health_alert.sh
+
+### 用途
+每 30 分钟检查系统健康指标，超 🔴 阈值立即推送告警到 Telegram。
+
+### 告警条件（去重 30 分钟）
+| 指标 | 🔴 阈值 |
+|-----|--------|
+| 磁盘使用率 | ≥95% |
+| 内存使用率 | ≥95% |
+| 负载比 (负载/核数) | ≥1.0 |
+| Gateway 状态 | stopped |
+
+### 执行方式
+```bash
+# 手动执行
+bash /home/admin/.openclaw/scripts/system_health_alert.sh
+
+# Cron 定时（每 30 分钟）
+*/30 * * * * bash /home/admin/.openclaw/scripts/system_health_alert.sh
+```
+
+### 输出
+- 有告警：输出告警消息（由 Cron 转发到 Telegram）
+- 无告警：输出"无紧急告警"（不推送）
 
 ---
 
