@@ -1,0 +1,133 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-04-09",
+  "owner": "CC (金山云政企事业部)",
+
+  "tracks": {
+    "ai_frontier": {
+      "name": "AI 前沿",
+      "name_en": "AI Frontier",
+      "description": "追踪大模型、AI 技术、开源项目最新进展",
+      "keywords": [
+        "GPT-5", "Claude 4", "Gemini 2", "Llama 4", "AGI",
+        "OpenAI", "Anthropic", "DeepMind", "Mistral", "MoE",
+        "Large Language Model", "Multimodal", "Agent", "RAG",
+        "Inference", "Scaling Law", "Alignment", "Yann LeCun",
+        "Geoffrey Hinton", "Andrej Karpathy", "Lex Fridman",
+        "Elon Musk AI", "xAI", "Perplexity AI"
+      ],
+      "exclude_keywords": ["crypto", "NFT", "gaming"],
+      "sources": ["xurl", "gh", "blog", "web"],
+      "gh_repos": [
+        "openai/openai", "anthropics/anthropic-sdk",
+        "mistralai/mistralai", "meta-llama/llama",
+        "deepseek-ai/deepseek", "QwenLM/Qwen"
+      ],
+      "xurl_handles": [
+        "@ylecun", "@kaborpathy", "@ylecun", "@elonmusk",
+        "@sama", "@gaboratory", "@jimfan", "@DrJimFan"
+      ],
+      "blog_feeds": [
+        "https://頻道/feed",
+        "https://www.jimfan.ai/feed"
+      ],
+      "alert_threshold": 70,
+      "report_channel": "feishu"
+    },
+
+    "industry_intel": {
+      "name": "政企云 & 行业情报",
+      "name_en": "Enterprise Cloud & Industry",
+      "description": "政企云市场、招投标、行业报告、竞品动态",
+      "keywords": [
+        "政务云", "国资云", "政务信息化", "数据要素",
+        "智慧城市", "数字政府", "企业数字化转型",
+        "云计算", "私有云", "混合云", "云原生",
+        "K8s", "Kubernetes", "OpenStack",
+        "阿里云", "华为云", "腾讯云", "天翼云", "移动云",
+        "招投标", "单一来源", "政采", "集采",
+        "信创", "国产化", "自主可控"
+      ],
+      "exclude_keywords": ["游戏", "电商"],
+      "sources": ["web", "gh"],
+      "gh_repos": [],
+      "xurl_handles": [
+        "@AlibabaCloud", "@HuaweiCloud", "@TencentCloud"
+      ],
+      "alert_threshold": 65,
+      "report_channel": "feishu"
+    },
+
+    "policy_eco": {
+      "name": "政策与生态",
+      "name_en": "Policy & Ecosystem",
+      "description": "AI 监管政策、数据法规、行业标准、开源生态",
+      "keywords": [
+        "AI 监管", "生成式AI管理办法", "深度合成",
+        "数据安全法", "个人信息保护法", "数据跨境",
+        "网信办", "工信部", "信通院", "数据局",
+        "AIGC 政策", "大模型备案", "算法推荐",
+        "开源大模型", "开源生态", "Linux 基金会",
+        "CNCF", "OpenInfra", "GitHub AI 政策"
+      ],
+      "exclude_keywords": [],
+      "sources": ["web", "blog"],
+      "alert_threshold": 75,
+      "report_channel": "feishu"
+    },
+
+    "venture_scout": {
+      "name": "创业侦察",
+      "name_en": "Venture Scout",
+      "description": "AI 创业公司、新产品发布、融资动态",
+      "keywords": [
+        "AI startup", "Series A", "Series B", "funding",
+        "AI product launch", "launch", "beta",
+        "AI unicorn", "AI 独角兽", "AI 创业", "融资"
+      ],
+      "exclude_keywords": [],
+      "sources": ["xurl", "web", "gh"],
+      "gh_repos": [],
+      "xurl_handles": [],
+      "alert_threshold": 60,
+      "report_channel": "feishu"
+    }
+  },
+
+  "scoring": {
+    "source_weights": {
+      "xurl": 2.0,
+      "gh": 1.5,
+      "blog": 1.8,
+      "web": 1.0
+    },
+    "recency_decay": {
+      "24h": 1.0,
+      "48h": 0.7,
+      "72h": 0.4,
+      "168h": 0.1
+    },
+    "engagement_boost": {
+      "threshold": 100,
+      "multiplier": 1.5
+    }
+  },
+
+  "report_templates": {
+    "morning": {
+      "title": "📡 情报早报 | {date}",
+      "sections": ["🔥 今日重点", "📰 行业动态", "💡 技术前沿", "📅 今日日程"],
+      "format": "飞书文档"
+    },
+    "evening": {
+      "title": "🌙 情报晚报 | {date}",
+      "sections": ["📊 今日总结", "🔮 明日预览", "📌 关注清单"],
+      "format": "飞书文档"
+    },
+    "flash": {
+      "title": "🚨 突发快讯 | {time}",
+      "sections": ["📍 事件", "📊 影响评估", "💡 建议动作"],
+      "format": "飞书消息"
+    }
+  }
+}

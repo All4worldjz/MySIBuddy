@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+*.pyc
+*.log
+summaries/
+data/
+reports/*.md
+config/tracks_local.json
+venv/
+.venv/
+.env

@@ -1,0 +1,9 @@
+# Node
+node_modules/
+dist/
+*.log
+npm-debug.log*
+
+# 环境
+.env
+.env.local

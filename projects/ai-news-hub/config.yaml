@@ -1,0 +1,117 @@
+# AI News Hub 配置
+
+# 调度设置
+schedule:
+  hour: 8
+  minute: 0
+  timezone: "Asia/Shanghai"
+
+# 数据源配置
+sources:
+  arxiv:
+    enabled: true
+    categories:
+      - cs.AI
+      - cs.LG
+      - cs.CL
+      - cs.CV
+    keywords:
+      - "large language model"
+      - "LLM"
+      - "multimodal"
+      - "reasoning"
+      - "agent"
+      - "transformer"
+      - "diffusion"
+      - "GPT"
+      - "BERT"
+      - "RLHF"
+      - "fine-tuning"
+      - "inference"
+    max_results: 50
+    
+  hackernews:
+    enabled: true
+    min_score: 100
+    min_score_weekend: 80
+    keywords:
+      - "AI"
+      - "machine learning"
+      - "GPT"
+      - "neural network"
+      - "OpenAI"
+      - "DeepMind"
+      - "Anthropic"
+      - "LLM"
+      - "diffusion"
+      - "transformer"
+    max_items: 30
+    
+  reddit:
+    enabled: true
+    subreddits:
+      - MachineLearning
+      - artificial
+      - LocalLLaMA
+      - Claude
+    min_score: 50
+    min_comments: 10
+    max_items: 20
+    
+  zh_sources:
+    enabled: true
+    rss_feeds:
+      - name: "机器之心"
+        url: "https://www.jiqizhixin.com/rss"
+      - name: "量子位"
+        url: "https://www.qbitai.com/feed"
+    keywords:
+      - "AI"
+      - "人工智能"
+      - "大模型"
+      - "机器学习"
+      - "深度学习"
+
+  # AI 领袖播客与 Newsletter
+  podcasts:
+    enabled: true
+    rss_feeds:
+      - name: "Lex Fridman Podcast"
+        url: "https://lexfridman.com/feed/podcast/"
+        filter_keywords: ["AI", "artificial intelligence", "machine learning", "OpenAI", "DeepMind", "LLM", "neural", "AGI"]
+      - name: "Machine Learning Street Talk"
+        url: "https://anchor.fm/s/1e5a062c/podcast/rss"
+      - name: "TWIML AI Podcast"
+        url: "https://feeds.megaphone.fm/TWIMLAI"
+      - name: "Andrej Karpathy"
+        url: "https://karpathy.ai/blog/feed.xml"
+        type: "blog"
+      - name: "Lilian Weng"
+        url: "https://lilianweng.github.io/index.xml"
+        type: "blog"
+      - name: "Sebastian Ruder"
+        url: "https://ruder.io/atom.xml"
+        type: "blog"
+      - name: "Import AI"
+        url: "https://importai.substack.com/feed"
+        type: "newsletter"
+      - name: "The Batch (DeepLearning.AI)"
+        url: "https://www.deeplearning.ai/the-batch/rss/"
+        type: "newsletter"
+      - name: "AI Alignment Newsletter"
+        url: "https://rohinshah.wordpress.com/feed/"
+        type: "newsletter"
+
+# 摘要配置
+summarizer:
+  model: "gemini"
+  max_articles_per_source: 5
+  
+# 推送配置
+telegram:
+  target_session: "agent:tech-mentor:telegram:direct:8606756625"
+  
+# 存储配置
+storage:
+  db_path: "data/news.db"
+  retention_days: 7
