@@ -390,8 +390,8 @@ message 工具 → Telegram (春哥)
 3. CPU 采样 0.3-0.5 秒可能受脚本自身影响 → 可接受误差
 
 ### 下一步计划
-- [ ] 增加历史趋势记录（可选：写入 InfluxDB/Prometheus）
-- [ ] 增加异常告警即时通知（非 hourly，超阈值立即推送）
+- [x] ~~增加异常告警即时通知~~ → **已完成 (2026-04-09)**
+- [ ] 历史趋势记录（可选：写入 InfluxDB/Prometheus）- 暂缓
 - [ ] Docker 容器化（如需跨环境部署）
 
 ### 操作手册
@@ -408,4 +408,37 @@ openclaw cron run --job-id 6f7d1857-85ab-4d77-a5f5-334f3391a1c2
 # 禁用/启用
 openclaw cron update --job-id 6f7d1857-85ab-4d77-a5f5-334f3391a1c2 --enabled false
 ```
+
+
+---
+
+## 异常告警脚本实施记录（2026-04-09 追加）
+
+### 脚本信息
+- **名称**：system_health_alert.sh
+- **版本**：v1.0.0
+- **Git Commit**：e233b08
+- **Cron Job ID**：`f38730ff-fc00-4373-9660-fde4aad8395e`
+
+### 告警条件
+| 指标 | 🔴 阈值 | 去重周期 |
+|-----|--------|---------|
+| 磁盘使用率 | ≥95% | 30 分钟 |
+| 内存使用率 | ≥95% | 30 分钟 |
+| 负载比 | ≥1.0 | 30 分钟 |
+| Gateway 状态 | stopped | 30 分钟 |
+
+### Cron 配置
+- **频率**：每 30 分钟一次
+- **送达**：仅当有🔴告警时推送 Telegram
+- **去重**：同一告警 30 分钟内不重复
+
+### GitHub 仓库
+- **Remote**：git@github.com:All4worldjz/MySIBuddy.git
+- **分支**：`openclaw-ops`
+- **URL**：https://github.com/All4worldjz/MySIBuddy/tree/openclaw-ops
+- **Commits**：
+  - c330218 feat: 系统健康监控脚本 v2.1.0
+  - 35ab91d docs: MEMORY.md 记录系统健康监控脚本实施
+  - e233b08 feat: 系统健康异常告警脚本 v1.0.0
 
