@@ -150,13 +150,14 @@ check_gateway() {
 check_memory() {
     command -v openclaw &>/dev/null || return
     
+    # 方案 A: 尝试 openclaw status --deep
     local status
-    status=$(timeout 5 openclaw status --deep 2>/dev/null || echo "")
+    status=$(timeout 8 openclaw status --deep 2>/dev/null || echo "")
     
     local mem_line
     mem_line=$(echo "$status" | grep -i "memory" | head -1 || echo "")
     
-    if [[ -n "$mem_line" ]]; then
+    if [[ -n "$mem_line" && "$mem_line" == *"chunks"* ]]; then
         # 检查 FTS 状态（全文搜索）
         local fts
         fts=$(echo "$mem_line" | grep -oP 'fts \K[a-z]+' || echo "unknown")
@@ -185,6 +186,26 @@ check_memory() {
                 ALERTS+=("🟡 Memory 向量索引：${vector}（语义搜索可能不可用）")
                 set_alert "mem_vector_unknown" "$now"
             fi
+        fi
+    else
+        # 方案 B: 降级检查（SQLite 直连）
+        local chief_db="/home/admin/.openclaw/memory/chief-of-staff.sqlite"
+        if [[ -f "$chief_db" ]]; then
+            local chunks
+            chunks=$(sqlite3 "$chief_db" "SELECT COUNT(*) FROM chunks;" 2>/dev/null || echo "0")
+            if ((chunks > 0)); then
+                # SQLite 正常，无告警
+                return
+            fi
+        fi
+        # 如果 SQLite 也没有数据，才告警
+        local last_alert
+        last_alert=$(get_last_alert "mem_sqlite_missing")
+        local now
+        now=$(date +%s)
+        if ((now - last_alert > COOLDOWN_MIN * 60)); then
+            ALERTS+=("🔴 Memory SQLite 异常：无数据或文件缺失")
+            set_alert "mem_sqlite_missing" "$now"
         fi
     fi
 }

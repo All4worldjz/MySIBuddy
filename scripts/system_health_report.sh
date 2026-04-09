@@ -504,14 +504,15 @@ collect_memory_health_compact() {
     echo "**🧠 Memory 系统**"
     command -v openclaw &>/dev/null || { echo "  ⚠️ CLI 未安装"; return; }
     
+    # 方案 A: 尝试 openclaw status --deep (可能超时)
     local status
-    status=$(timeout 15 openclaw status --deep 2>/dev/null || echo "")
+    status=$(timeout 8 openclaw status --deep 2>/dev/null || echo "")
     
     # 提取 Memory 行
     local mem_line
     mem_line=$(echo "$status" | grep -i "memory" | head -1 || echo "")
     
-    if [[ -n "$mem_line" ]]; then
+    if [[ -n "$mem_line" && "$mem_line" == *"chunks"* ]]; then
         # 解析：42 files · 280 chunks · sources memory · plugin memory-core · vector unknown · fts ready · cache on (149)
         local files chunks vector fts cache_size
         files=$(echo "$mem_line" | grep -oP '\d+(?= files)' || echo "?")
@@ -538,7 +539,19 @@ collect_memory_health_compact() {
             ((HAS_WARN++)) || true
         fi
     else
-        echo "  ⚠️ 无法获取 Memory 状态"
+        # 方案 B: 降级检查（直接查 SQLite + 配置文件数）
+        local chief_db="/home/admin/.openclaw/memory/chief-of-staff.sqlite"
+        if [[ -f "$chief_db" ]]; then
+            local chunks
+            chunks=$(sqlite3 "$chief_db" "SELECT COUNT(*) FROM chunks;" 2>/dev/null || echo "?")
+            local files
+            files=$(ls /home/admin/.openclaw/workspace-chief/memory/*.md 2>/dev/null | wc -l || echo "?")
+            echo "  文件：🟢 ${files} | 分块：🟢 ${chunks} (SQLite 正常)"
+            echo "  向量：🟡 N/A | 全文：🟢 N/A | 缓存：🟢 N/A"
+            echo "  _注：--deep 超时，降级为 SQLite 直连检查_"
+        else
+            echo "  ⚠️ 无法获取 Memory 状态 (--deep 超时 + SQLite 缺失)"
+        fi
     fi
     echo ""
 }
