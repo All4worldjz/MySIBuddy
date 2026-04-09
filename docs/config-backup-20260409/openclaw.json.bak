@@ -1,0 +1,963 @@
+{
+  "meta": {
+    "lastTouchedVersion": "2026.4.5",
+    "lastTouchedAt": "2026-04-06T13:31:27.873Z"
+  },
+  "wizard": {
+    "lastRunAt": "2026-04-06T13:31:27.345Z",
+    "lastRunVersion": "2026.4.5",
+    "lastRunCommand": "doctor",
+    "lastRunMode": "local"
+  },
+  "secrets": {
+    "providers": {
+      "runtime": {
+        "source": "file",
+        "path": "/home/admin/.openclaw/runtime-secrets.json",
+        "mode": "json"
+      },
+      "lark-secrets": {
+        "source": "file",
+        "path": "~/.openclaw/credentials/lark.secrets.json"
+      }
+    },
+    "defaults": {
+      "file": "runtime"
+    }
+  },
+  "auth": {
+    "profiles": {
+      "minimax:primary": {
+        "provider": "minimax",
+        "mode": "token"
+      },
+      "modelstudio:default": {
+        "provider": "modelstudio",
+        "mode": "api_key"
+      },
+      "minimax:global": {
+        "provider": "minimax",
+        "mode": "api_key"
+      }
+    },
+    "order": {
+      "minimax": [
+        "minimax:global",
+        "minimax:primary"
+      ]
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "minimax/MiniMax-M2.7",
+        "fallbacks": [
+          "modelstudio/qwen3.5-plus",
+          "modelstudio/qwen3-max-2026-01-23",
+          "modelstudio/qwen3-coder-next",
+          "modelstudio/qwen3-coder-plus",
+          "modelstudio/MiniMax-M2.5",
+          "modelstudio/glm-5",
+          "modelstudio/glm-4.7",
+          "modelstudio/kimi-k2.5"
+        ]
+      },
+      "compaction": {
+        "mode": "safeguard"
+      },
+      "maxConcurrent": 2,
+      "subagents": {
+        "maxConcurrent": 4,
+        "maxSpawnDepth": 1,
+        "maxChildrenPerAgent": 4,
+        "archiveAfterMinutes": 60,
+        "thinking": "low",
+        "runTimeoutSeconds": 300,
+        "announceTimeoutMs": 120000
+      },
+      "sandbox": {
+        "mode": "off"
+      },
+      "models": {
+        "modelstudio/qwen3.5-plus": {
+          "alias": "Qwen"
+        },
+        "modelstudio/qwen3-max-2026-01-23": {},
+        "modelstudio/qwen3-coder-next": {},
+        "modelstudio/qwen3-coder-plus": {},
+        "modelstudio/MiniMax-M2.5": {},
+        "modelstudio/glm-5": {},
+        "modelstudio/glm-4.7": {},
+        "modelstudio/kimi-k2.5": {},
+        "minimax/MiniMax-M2.7": {
+          "alias": "Minimax"
+        }
+      }
+    },
+    "list": [
+      {
+        "id": "chief-of-staff",
+        "default": true,
+        "workspace": "/home/admin/.openclaw/workspace-chief",
+        "agentDir": "/home/admin/.openclaw/agents/chief-of-staff/agent",
+        "model": {
+          "primary": "minimax/MiniMax-M2.7",
+          "fallbacks": [
+            "modelstudio/qwen3.5-plus",
+            "modelstudio/glm-5",
+            "modelstudio/kimi-k2.5"
+          ]
+        },
+        "subagents": {
+          "allowAgents": [
+            "venture-hub",
+            "product-studio",
+            "coder-hub",
+            "tech-mentor",
+            "life-hub",
+            "zh-scribe",
+            "work-hub"
+          ]
+        },
+        "tools": {
+          "alsoAllow": [
+            "feishu_bitable_app",
+            "feishu_bitable_app_table",
+            "feishu_bitable_app_table_field",
+            "feishu_bitable_app_table_record",
+            "feishu_bitable_app_table_view",
+            "feishu_calendar_calendar",
+            "feishu_calendar_event",
+            "feishu_calendar_event_attendee",
+            "feishu_calendar_freebusy",
+            "feishu_chat",
+            "feishu_chat_members",
+            "feishu_create_doc",
+            "feishu_doc_comments",
+            "feishu_doc_media",
+            "feishu_drive_file",
+            "feishu_fetch_doc",
+            "feishu_get_user",
+            "feishu_im_bot_image",
+            "feishu_im_user_fetch_resource",
+            "feishu_im_user_get_messages",
+            "feishu_im_user_get_thread_messages",
+            "feishu_im_user_message",
+            "feishu_im_user_search_messages",
+            "feishu_oauth",
+            "feishu_oauth_batch_auth",
+            "feishu_search_doc_wiki",
+            "feishu_search_user",
+            "feishu_sheet",
+            "feishu_task_comment",
+            "feishu_task_subtask",
+            "feishu_task_task",
+            "feishu_task_tasklist",
+            "feishu_update_doc",
+            "feishu_wiki_space",
+            "feishu_wiki_space_node",
+            "web_fetch",
+            "unified_search"
+          ]
+        },
+        "sandbox": {
+          "mode": "off"
+        }
+      },
+      {
+        "id": "work-hub",
+        "workspace": "/home/admin/.openclaw/workspace-work",
+        "agentDir": "/home/admin/.openclaw/agents/work-hub/agent",
+        "model": {
+          "primary": "minimax/MiniMax-M2.7",
+          "fallbacks": [
+            "modelstudio/qwen3-coder-plus",
+            "modelstudio/qwen3.5-plus",
+            "modelstudio/kimi-k2.5"
+          ]
+        },
+        "subagents": {
+          "allowAgents": [
+            "venture-hub",
+            "product-studio",
+            "tech-mentor",
+            "life-hub",
+            "zh-scribe"
+          ]
+        },
+        "tools": {
+          "alsoAllow": [
+            "feishu_bitable_app",
+            "feishu_bitable_app_table",
+            "feishu_bitable_app_table_field",
+            "feishu_bitable_app_table_record",
+            "feishu_bitable_app_table_view",
+            "feishu_calendar_calendar",
+            "feishu_calendar_event",
+            "feishu_calendar_event_attendee",
+            "feishu_calendar_freebusy",
+            "feishu_chat",
+            "feishu_chat_members",
+            "feishu_create_doc",
+            "feishu_doc_comments",
+            "feishu_doc_media",
+            "feishu_drive_file",
+            "feishu_fetch_doc",
+            "feishu_get_user",
+            "feishu_im_bot_image",
+            "feishu_im_user_fetch_resource",
+            "feishu_im_user_get_messages",
+            "feishu_im_user_get_thread_messages",
+            "feishu_im_user_message",
+            "feishu_im_user_search_messages",
+            "feishu_oauth",
+            "feishu_oauth_batch_auth",
+            "feishu_search_doc_wiki",
+            "feishu_search_user",
+            "feishu_sheet",
+            "feishu_task_comment",
+            "feishu_task_subtask",
+            "feishu_task_task",
+            "feishu_task_tasklist",
+            "feishu_update_doc",
+            "feishu_wiki_space",
+            "feishu_wiki_space_node",
+            "pdf",
+            "web_fetch",
+            "unified_search"
+          ],
+          "deny": [
+            "exec",
+            "process"
+          ]
+        },
+        "sandbox": {
+          "mode": "off"
+        }
+      },
+      {
+        "id": "venture-hub",
+        "workspace": "/home/admin/.openclaw/workspace-venture",
+        "agentDir": "/home/admin/.openclaw/agents/venture-hub/agent",
+        "model": {
+          "primary": "minimax/MiniMax-M2.7",
+          "fallbacks": [
+            "modelstudio/qwen3.5-plus",
+            "modelstudio/glm-5",
+            "modelstudio/kimi-k2.5"
+          ]
+        },
+        "tools": {
+          "alsoAllow": [
+            "unified_search"
+          ],
+          "deny": [
+            "exec",
+            "process"
+          ]
+        },
+        "sandbox": {
+          "mode": "off"
+        },
+        "subagents": {
+          "allowAgents": [
+            "tech-mentor",
+            "work-hub"
+          ]
+        }
+      },
+      {
+        "id": "life-hub",
+        "workspace": "/home/admin/.openclaw/workspace-life",
+        "agentDir": "/home/admin/.openclaw/agents/life-hub/agent",
+        "model": {
+          "primary": "minimax/MiniMax-M2.7",
+          "fallbacks": [
+            "modelstudio/qwen3.5-plus",
+            "modelstudio/glm-5",
+            "modelstudio/kimi-k2.5"
+          ]
+        },
+        "tools": {
+          "alsoAllow": [
+            "unified_search"
+          ],
+          "deny": [
+            "exec",
+            "process"
+          ]
+        },
+        "sandbox": {
+          "mode": "off"
+        },
+        "subagents": {
+          "allowAgents": [
+            "tech-mentor",
+            "work-hub"
+          ]
+        }
+      },
+      {
+        "id": "product-studio",
+        "workspace": "/home/admin/.openclaw/workspace-product",
+        "agentDir": "/home/admin/.openclaw/agents/product-studio/agent",
+        "model": {
+          "primary": "minimax/MiniMax-M2.7",
+          "fallbacks": [
+            "modelstudio/qwen3-coder-plus",
+            "modelstudio/qwen3.5-plus",
+            "modelstudio/kimi-k2.5"
+          ]
+        },
+        "tools": {
+          "alsoAllow": [
+            "unified_search"
+          ],
+          "deny": [
+            "exec",
+            "process"
+          ]
+        },
+        "sandbox": {
+          "mode": "off"
+        },
+        "subagents": {
+          "allowAgents": [
+            "tech-mentor",
+            "work-hub"
+          ]
+        }
+      },
+      {
+        "id": "zh-scribe",
+        "workspace": "/home/admin/.openclaw/workspace-zh-scribe",
+        "agentDir": "/home/admin/.openclaw/agents/zh-scribe/agent",
+        "model": {
+          "primary": "minimax/MiniMax-M2.7",
+          "fallbacks": [
+            "modelstudio/qwen3.5-plus",
+            "modelstudio/glm-5",
+            "modelstudio/kimi-k2.5"
+          ]
+        },
+        "subagents": {
+          "allowAgents": [
+            "venture-hub",
+            "product-studio",
+            "tech-mentor",
+            "life-hub",
+            "work-hub"
+          ]
+        },
+        "tools": {
+          "alsoAllow": [
+            "feishu_bitable_app",
+            "feishu_bitable_app_table",
+            "feishu_bitable_app_table_field",
+            "feishu_bitable_app_table_record",
+            "feishu_bitable_app_table_view",
+            "feishu_calendar_calendar",
+            "feishu_calendar_event",
+            "feishu_calendar_event_attendee",
+            "feishu_calendar_freebusy",
+            "feishu_chat",
+            "feishu_chat_members",
+            "feishu_create_doc",
+            "feishu_doc_comments",
+            "feishu_doc_media",
+            "feishu_drive_file",
+            "feishu_fetch_doc",
+            "feishu_get_user",
+            "feishu_im_bot_image",
+            "feishu_im_user_fetch_resource",
+            "feishu_im_user_get_messages",
+            "feishu_im_user_get_thread_messages",
+            "feishu_im_user_message",
+            "feishu_im_user_search_messages",
+            "feishu_oauth",
+            "feishu_oauth_batch_auth",
+            "feishu_search_doc_wiki",
+            "feishu_search_user",
+            "feishu_sheet",
+            "feishu_task_comment",
+            "feishu_task_subtask",
+            "feishu_task_task",
+            "feishu_task_tasklist",
+            "feishu_update_doc",
+            "feishu_wiki_space",
+            "feishu_wiki_space_node",
+            "web_fetch",
+            "unified_search"
+          ],
+          "deny": [
+            "exec",
+            "process"
+          ]
+        },
+        "sandbox": {
+          "mode": "off"
+        }
+      },
+      {
+        "id": "tech-mentor",
+        "workspace": "/home/admin/.openclaw/workspace-tech-mentor",
+        "agentDir": "/home/admin/.openclaw/agents/tech-mentor/agent",
+        "model": {
+          "primary": "minimax/MiniMax-M2.7",
+          "fallbacks": [
+            "modelstudio/qwen3-coder-next",
+            "modelstudio/qwen3.5-plus",
+            "modelstudio/glm-5"
+          ]
+        },
+        "subagents": {
+          "allowAgents": [
+            "venture-hub",
+            "product-studio",
+            "coder-hub",
+            "zh-scribe",
+            "work-hub"
+          ]
+        },
+        "tools": {
+          "alsoAllow": [
+            "web_fetch",
+            "unified_search"
+          ],
+          "deny": [
+            "exec",
+            "process"
+          ]
+        },
+        "sandbox": {
+          "mode": "off"
+        }
+      },
+      {
+        "id": "coder-hub",
+        "workspace": "/home/admin/.openclaw/workspace-coder",
+        "agentDir": "/home/admin/.openclaw/agents/coder-hub/agent",
+        "model": {
+          "primary": "minimax/MiniMax-M2.7",
+          "fallbacks": [
+            "modelstudio/qwen3.5-plus",
+            "modelstudio/qwen3-coder-plus"
+          ]
+        },
+        "tools": {
+          "alsoAllow": [
+            "group:runtime",
+            "unified_search"
+          ]
+        },
+        "sandbox": {
+          "mode": "off"
+        }
+      }
+    ]
+  },
+  "tools": {
+    "profile": "full",
+    "sessions": {
+      "visibility": "all"
+    },
+    "agentToAgent": {
+      "enabled": true,
+      "allow": [
+        "zh-scribe",
+        "venture-hub",
+        "product-studio",
+        "coder-hub",
+        "tech-mentor",
+        "life-hub",
+        "chief-of-staff",
+        "work-hub"
+      ]
+    },
+    "web": {
+      "search": {
+        "provider": "duckduckgo",
+        "enabled": true,
+        "openaiCodex": {}
+      },
+      "fetch": {
+        "enabled": true
+      }
+    }
+  },
+  "bindings": [
+    {
+      "type": "route",
+      "agentId": "chief-of-staff",
+      "match": {
+        "channel": "telegram",
+        "accountId": "chief"
+      }
+    },
+    {
+      "type": "route",
+      "agentId": "venture-hub",
+      "match": {
+        "channel": "telegram",
+        "accountId": "personal",
+        "peer": {
+          "kind": "group",
+          "id": "-1003839165807"
+        }
+      }
+    },
+    {
+      "type": "route",
+      "agentId": "life-hub",
+      "match": {
+        "channel": "telegram",
+        "accountId": "personal",
+        "peer": {
+          "kind": "group",
+          "id": "-1003872666315"
+        }
+      }
+    },
+    {
+      "type": "route",
+      "agentId": "life-hub",
+      "match": {
+        "channel": "telegram",
+        "accountId": "personal"
+      }
+    },
+    {
+      "type": "route",
+      "agentId": "work-hub",
+      "match": {
+        "channel": "feishu",
+        "accountId": "work"
+      }
+    },
+    {
+      "type": "route",
+      "agentId": "zh-scribe",
+      "match": {
+        "channel": "feishu",
+        "accountId": "scribe"
+      }
+    },
+    {
+      "type": "route",
+      "agentId": "tech-mentor",
+      "match": {
+        "channel": "telegram",
+        "accountId": "mentor"
+      }
+    }
+  ],
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+  "session": {
+    "dmScope": "per-channel-peer",
+    "agentToAgent": {
+      "maxPingPongTurns": 1
+    },
+    "threadBindings": {
+      "enabled": true,
+      "idleHours": 8,
+      "maxAgeHours": 0
+    }
+  },
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "session-memory": {
+          "enabled": true
+        },
+        "command-logger": {
+          "enabled": true
+        },
+        "boot-md": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "accounts": {
+        "chief": {
+          "name": "Telegram Chief",
+          "enabled": true,
+          "dmPolicy": "pairing",
+          "botToken": {
+            "source": "file",
+            "provider": "runtime",
+            "id": "/TELEGRAM_BOT_TOKEN_CHIEF"
+          },
+          "allowFrom": [
+            "8606756625"
+          ],
+          "groupPolicy": "disabled",
+          "streaming": "partial"
+        },
+        "personal": {
+          "name": "Telegram Personal",
+          "enabled": true,
+          "dmPolicy": "pairing",
+          "botToken": {
+            "source": "file",
+            "provider": "runtime",
+            "id": "/TELEGRAM_BOT_TOKEN_PERSONAL"
+          },
+          "groups": {
+            "-1003839165807": {
+              "groupPolicy": "allowlist",
+              "enabled": true
+            },
+            "-1003872666315": {
+              "groupPolicy": "allowlist",
+              "enabled": true
+            }
+          },
+          "allowFrom": [
+            "8606756625"
+          ],
+          "groupAllowFrom": [
+            "8606756625"
+          ],
+          "groupPolicy": "allowlist",
+          "streaming": "partial"
+        },
+        "mentor": {
+          "name": "Telegram Mentor",
+          "enabled": true,
+          "dmPolicy": "pairing",
+          "botToken": {
+            "source": "file",
+            "provider": "runtime",
+            "id": "/TELEGRAM_BOT_TOKEN_MENTOR"
+          },
+          "allowFrom": [
+            "8606756625"
+          ],
+          "groupPolicy": "disabled",
+          "streaming": "partial"
+        }
+      },
+      "defaultAccount": "chief"
+    },
+    "feishu": {
+      "enabled": true,
+      "connectionMode": "websocket",
+      "domain": "feishu",
+      "reactionNotifications": "own",
+      "typingIndicator": true,
+      "resolveSenderNames": true,
+      "defaultAccount": "work",
+      "accounts": {
+        "work": {
+          "enabled": true,
+          "name": "Feishu Work",
+          "appId": "cli_a93c20939cf8dbef",
+          "appSecret": {
+            "source": "file",
+            "provider": "runtime",
+            "id": "/FEISHU_APP_SECRET"
+          },
+          "dmPolicy": "pairing",
+          "groupPolicy": "allowlist",
+          "allowFrom": [
+            "ou_04405f4e9dbe76c2cf241402bc2096b7"
+          ]
+        },
+        "scribe": {
+          "enabled": true,
+          "name": "Feishu Scribe",
+          "appId": "cli_a93e64a4c2785cb2",
+          "appSecret": {
+            "source": "file",
+            "provider": "runtime",
+            "id": "/FEISHU_APP_SECRET_SCRIBE"
+          },
+          "dmPolicy": "pairing",
+          "groupPolicy": "allowlist"
+        }
+      },
+      "streaming": true,
+      "groups": {
+        "*": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "loopback",
+    "auth": {
+      "mode": "token",
+      "token": {
+        "source": "file",
+        "provider": "runtime",
+        "id": "/OPENCLAW_GATEWAY_TOKEN"
+      }
+    },
+    "tailscale": {
+      "mode": "off",
+      "resetOnExit": false
+    },
+    "reload": {
+      "mode": "hybrid",
+      "debounceMs": 300
+    },
+    "trustedProxies": [
+      "127.0.0.1"
+    ]
+  },
+  "plugins": {
+    "allow": [
+      "duckduckgo",
+      "minimax",
+      "openclaw-lark",
+      "telegram",
+      "openai",
+      "qwen",
+      "memory-wiki"
+    ],
+    "deny": [
+      "feishu"
+    ],
+    "slots": {
+      "contextEngine": "legacy",
+      "memory": "memory-core"
+    },
+    "entries": {
+      "duckduckgo": {
+        "enabled": true
+      },
+      "minimax": {
+        "enabled": true
+      },
+      "openclaw-lark": {
+        "enabled": true
+      },
+      "telegram": {
+        "enabled": true
+      },
+      "qwen": {
+        "enabled": true
+      },
+      "memory-wiki": {
+        "enabled": true,
+        "config": {
+          "vaultMode": "isolated",
+          "vault": {
+            "path": "~/.openclaw/wiki/main",
+            "renderMode": "obsidian"
+          },
+          "obsidian": {
+            "enabled": true,
+            "useOfficialCli": false,
+            "vaultName": "MySiBuddy Wiki",
+            "openAfterWrites": false
+          },
+          "ingest": {
+            "autoCompile": true,
+            "maxConcurrentJobs": 1,
+            "allowUrlIngest": true
+          },
+          "search": {
+            "backend": "shared",
+            "corpus": "wiki"
+          },
+          "render": {
+            "preserveHumanBlocks": true,
+            "createBacklinks": true,
+            "createDashboards": true
+          },
+          "context": {
+            "includeCompiledDigestPrompt": false
+          }
+        }
+      }
+    },
+    "installs": {
+      "openclaw-lark": {
+        "source": "archive",
+        "sourcePath": "/tmp/openclaw-lark-W7VdeI/larksuite-openclaw-lark-2026.4.1.tgz",
+        "installPath": "/home/admin/.openclaw/extensions/openclaw-lark",
+        "version": "2026.4.1",
+        "installedAt": "2026-04-05T17:30:00.845Z"
+      }
+    }
+  },
+  "skills": {
+    "install": {
+      "nodeManager": "npm"
+    }
+  },
+  "models": {
+    "providers": {
+      "minimax": {
+        "baseUrl": "https://api.minimax.io/anthropic",
+        "api": "anthropic-messages",
+        "authHeader": true,
+        "models": [
+          {
+            "id": "MiniMax-M2.7",
+            "name": "MiniMax M2.7",
+            "reasoning": true,
+            "contextWindow": 204800
+          }
+        ]
+      },
+      "modelstudio": {
+        "baseUrl": "https://coding.dashscope.aliyuncs.com/v1",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "qwen3.5-plus",
+            "name": "qwen3.5-plus",
+            "reasoning": false,
+            "input": [
+              "text",
+              "image"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 1000000,
+            "maxTokens": 65536
+          },
+          {
+            "id": "qwen3-max-2026-01-23",
+            "name": "qwen3-max-2026-01-23",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 262144,
+            "maxTokens": 65536
+          },
+          {
+            "id": "qwen3-coder-next",
+            "name": "qwen3-coder-next",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 262144,
+            "maxTokens": 65536
+          },
+          {
+            "id": "qwen3-coder-plus",
+            "name": "qwen3-coder-plus",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 1000000,
+            "maxTokens": 65536
+          },
+          {
+            "id": "MiniMax-M2.5",
+            "name": "MiniMax-M2.5",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 1000000,
+            "maxTokens": 65536
+          },
+          {
+            "id": "glm-5",
+            "name": "glm-5",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 202752,
+            "maxTokens": 16384
+          },
+          {
+            "id": "glm-4.7",
+            "name": "glm-4.7",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 202752,
+            "maxTokens": 16384
+          },
+          {
+            "id": "kimi-k2.5",
+            "name": "kimi-k2.5",
+            "reasoning": false,
+            "input": [
+              "text",
+              "image"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 262144,
+            "maxTokens": 32768
+          }
+        ]
+      }
+    },
+    "mode": "merge"
+  },
+  "memory": {
+    "backend": "builtin",
+    "qmd": {
+      "searchMode": "search"
+    }
+  }
+}
