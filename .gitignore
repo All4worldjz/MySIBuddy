@@ -1,0 +1,16 @@
+# OpenClaw runtime
+openclaw.json
+*.secrets.json
+runtime-secrets.json
+credentials/
+
+# Logs
+logs/
+*.log
+
+# Temporary
+tmp/
+.cache/
+
+# Node modules (if any)
+node_modules/
