@@ -464,3 +464,60 @@ openclaw cron update --job-id 6f7d1857-85ab-4d77-a5f5-334f3391a1c2 --enabled fal
   - 35ab91d docs: MEMORY.md 记录系统健康监控脚本实施
   - e233b08 feat: 系统健康异常告警脚本 v1.0.0
 
+---
+
+## 系统安全护栏固化记录（2026-04-09）
+
+### 背景
+2026-04-09 执行子会话上限提升配置变更时，违反了护栏流程：
+- 步骤 3 缺失：未明确请求春哥确认配置字段
+- 步骤 5 缺失：备份后未等春哥确认就继续执行
+- 步骤 8 不完整：未执行 `openclaw status --deep`
+- 步骤 9 缺失：未验证真实消息路由
+
+### 整改措施
+1. **创建检查清单**：`docs/guardrails-checklist.md`（十步闭环流程）
+2. **更新 AGENTS.md**：强化护栏条款，明确禁止行为
+3. **Git Commit**：`32a98f9`
+4. **远程推送**：openclaw-ops 分支
+
+### 护栏流程十步闭环
+
+**阶段一：诊断与方案**
+1. 只读诊断 → `openclaw status --deep`
+2. 提出最小改动方案 → 含回滚方案
+3. 明确配置字段 → ❗春哥必须明确确认
+
+**阶段二：备份与确认**
+4. 创建时间戳备份 → 输出备份路径
+5. 等待春哥确认 → ❗春哥必须明确说"继续"
+
+**阶段三：执行与验证**
+6. 执行变更 → config.patch / config.apply
+7. 重启或重载 → systemctl restart
+8. 深度验证 → ❗`openclaw status --deep`
+9. 真实消息验证 → ❗消息路由测试
+
+**阶段四：文档与归档**
+10. 文档记录 + Git → 实施日志 + commit + push
+
+### 禁止行为（红线）
+❌ 未备份直接修改配置
+❌ 春哥未明确确认配置字段就执行
+❌ 备份后未等春哥确认就继续
+❌ 未执行 `openclaw status --deep` 就报告完成
+❌ 未验证真实消息路由就报告成功
+❌ 跳过文档记录和 Git commit
+❌ 把"执行计划批准"等同于"配置字段确认"
+❌ 猜测性改配置（缺少运行/日志/配置证据）
+
+### 参考文档
+- `docs/guardrails-checklist.md`：完整检查清单（含模板、回滚流程）
+- `workspace-chief/AGENTS.md`：系统安全护栏章节
+
+### Git 记录
+- **Commit**: `32a98f9`
+- **Message**: "docs: 系统安全护栏检查清单（红线）"
+- **Files**: `docs/guardrails-checklist.md`, `workspace-chief/AGENTS.md`
+- **URL**: https://github.com/All4worldjz/MySIBuddy/commit/32a98f9
+
