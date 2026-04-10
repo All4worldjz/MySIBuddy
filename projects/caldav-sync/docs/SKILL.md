@@ -48,6 +48,25 @@ FEISHU_USER_OPEN_ID = "ou_04405f4e9dbe76c2cf241402bc2096b7"
 FEISHU_CALENDAR_ID = "feishu.cn_ymY7s23MqxLG33KkwElcuf@group.calendar.feishu.cn"
 ```
 
+### 4. 部署位置
+
+| 类型 | 路径 |
+|------|------|
+| **脚本部署目录** | `/home/admin/.openclaw/scripts/` |
+| **工作目录** | `/home/admin/.openclaw/scripts/` (systemd WorkingDirectory) |
+| **日志文件** | `/home/admin/.openclaw/logs/caldav_sync_full.log` |
+| **状态文件** | `/home/admin/.openclaw/data/caldav_sync_state_v2.json` |
+| **Token 存储** | `~/.local/share/openclaw-feishu-uat/*.enc` (AES-256-GCM 加密) |
+
+**systemd 服务配置**:
+```ini
+[Service]
+WorkingDirectory=/home/admin/.openclaw/scripts
+ExecStart=/usr/bin/python3 /home/admin/.openclaw/scripts/caldav_sync_full.py
+```
+
+> **注意**: 所有文件路径在脚本中使用**绝对路径**，不依赖工作目录。
+
 ---
 
 ## 🔧 常用操作

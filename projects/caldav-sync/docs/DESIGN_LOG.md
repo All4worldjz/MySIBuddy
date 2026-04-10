@@ -83,11 +83,20 @@
 
 | 项目 | 值 |
 |------|------|
+| **脚本部署目录** | `/home/admin/.openclaw/scripts/` |
+| **工作目录** | `/home/admin/.openclaw/scripts/` (systemd WorkingDirectory) |
 | 调度器 | systemd timer (`caldav-sync.timer`) |
 | 执行频率 | 每 10 分钟 |
 | 日志文件 | `/home/admin/.openclaw/logs/caldav_sync_full.log` |
 | 状态文件 | `/home/admin/.openclaw/data/caldav_sync_state_v2.json` |
 | Token 存储 | `~/.local/share/openclaw-feishu-uat/` (AES-256-GCM 加密) |
+
+**systemd 服务配置**:
+```ini
+[Service]
+WorkingDirectory=/home/admin/.openclaw/scripts
+ExecStart=/usr/bin/python3 /home/admin/.openclaw/scripts/caldav_sync_full.py
+```
 
 ---
 
