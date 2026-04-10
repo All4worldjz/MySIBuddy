@@ -171,8 +171,8 @@ class FeishuCalendarClient:
             return self._get_tenant_access_token()
     
     def _get_user_access_token(self):
-        """使用已导出的 access_token（从 openclaw-lark 解密获取）"""
-        # 直接从导出的 access_token 文件读取
+        """使用 refresh_token 获取用户 access_token (v2 endpoint + form-urlencoded)"""
+        # 优先尝试从 openclaw-lark 加密存储直接读取 (Node.js 辅助)
         token_file = "/home/admin/.openclaw/data/feishu_user_access_token.json"
         if os.path.exists(token_file):
             with open(token_file) as f:
@@ -191,15 +191,15 @@ class FeishuCalendarClient:
                 logger.info("✅ 用户 access_token 加载成功")
                 return self.access_token
             else:
-                logger.warning("⚠️ access_token 已过期，需要刷新")
+                logger.warning("⚠️ access_token 已过期，尝试刷新")
         
-        # 如果没有有效的 access_token，尝试用 refresh_token 刷新
+        # 如果没有有效的 access_token，用 refresh_token 刷新
         if not self.refresh_token:
             self.refresh_token = self.load_user_refresh_token()
             if not self.refresh_token:
                 raise Exception(
                     f"用户 OAuth refresh_token 未配置\n"
-                    f"请先运行: python3 /home/admin/.openclaw/scripts/feishu_oauth_setup.py\n"
+                    f"请先运行: node /home/admin/.openclaw/scripts/export_feishu_token.js\n"
                     f"或在飞书中向 work-hub 发送: /oauth"
                 )
         
@@ -207,38 +207,54 @@ class FeishuCalendarClient:
         if not app_secret:
             raise Exception("飞书应用密钥未配置")
         
-        # 使用 refresh_token 刷新 access_token
+        # 使用 v2 endpoint + form-urlencoded 格式刷新 (openclaw-lark 使用的方式)
+        import urllib.parse
+        refresh_url = "https://open.feishu.cn/open-apis/authen/v2/oauth/token"
+        body = urllib.parse.urlencode({
+            "grant_type": "refresh_token",
+            "refresh_token": self.refresh_token,
+            "client_id": self.app_id,
+            "client_secret": app_secret
+        })
+        
         resp = requests.post(
-            "https://open.feishu.cn/open-apis/authen/v1/oidc/refresh_access_token",
-            headers={"Content-Type": "application/json"},
-            json={
-                "grant_type": "refresh_token",
-                "refresh_token": self.refresh_token,
-                "client_id": self.app_id,
-                "client_secret": app_secret
-            }
+            refresh_url,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            data=body
         )
         data = resp.json()
         
-        if data.get("code") != 0:
-            # refresh_token 过期，需要重新授权
+        # v2 endpoint 返回 token_type 表示成功，v1 返回 code:0
+        if data.get("token_type") or data.get("code") == 0:
+            self.access_token = data.get("access_token", "")
+            if data.get("refresh_token"):
+                self.refresh_token = data["refresh_token"]
+                self.save_user_refresh_token(self.refresh_token)
+            
+            expires_in = data.get("expires_in", 7200)
+            self.token_expires_at = time.time() + expires_in - 300
+            
+            # 同时更新 Python 可读的 token 文件
+            token_output = {
+                "access_token": self.access_token,
+                "refresh_token": self.refresh_token,
+                "open_id": self.user_open_id,
+                "app_id": self.app_id,
+                "updated_at": datetime.now().isoformat(),
+                "expires_at": datetime.fromtimestamp(self.token_expires_at + 300).isoformat()
+            }
+            os.makedirs(os.path.dirname(token_file), exist_ok=True)
+            with open(token_file, 'w') as f:
+                json.dump(token_output, f, ensure_ascii=False, indent=2)
+            
+            logger.info("✅ 用户 access_token 刷新成功")
+            return self.access_token
+        else:
             logger.error(f"refresh_token 失效: {data}")
             raise Exception(
                 f"用户 OAuth refresh_token 已过期\n"
                 f"请重新授权: 在飞书中向 work-hub 发送 /oauth"
             )
-        
-        token_data_resp = data.get("data", {})
-        self.access_token = token_data_resp.get("access_token", "")
-        self.refresh_token = token_data_resp.get("refresh_token", self.refresh_token)
-        expires_in = token_data_resp.get("expires_in", 7200)
-        self.token_expires_at = time.time() + expires_in - 300
-        
-        if token_data_resp.get("refresh_token"):
-            self.save_user_refresh_token(token_data_resp["refresh_token"])
-        
-        logger.info("✅ 用户 access_token 刷新成功")
-        return self.access_token
     
     def _get_tenant_access_token(self):
         """获取应用 tenant_access_token"""
