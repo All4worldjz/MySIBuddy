@@ -214,6 +214,9 @@ python3 /home/admin/.openclaw/scripts/caldav_sync_full.py
 - **WPS CalDAV 文档**: https://caldav.wps.cn
 - **飞书日历 API**: https://open.feishu.cn/document/server-docs/calendar-v4/calendar-event/create
 - **OpenClaw 配置**: `/home/admin/.openclaw/openclaw.json`
+- **📖 设计日志**: `docs/DESIGN_LOG.md` - 完整设计历程和排错历史
+- **🔧 排错指南**: `docs/TROUBLESHOOTING.md` - 常见故障排查
+- **🤖 AI Coding 指南**: `docs/SKILL.md` - AI 工具操作手册
 
 ---
 

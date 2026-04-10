@@ -1,271 +1,238 @@
-# CalDAV 同步故障排查指南
+# CalDAV → 飞书日历 排错指南
+
+**目标读者**: AI Coding 工具 (Qwen, Claude, Gemini, Cursor 等)  
+**更新日期**: 2026-04-10
+
+---
 
 ## 🔍 快速诊断命令
 
 ```bash
 # 1. 检查服务状态
 sudo systemctl status caldav-sync.timer
-sudo systemctl status caldav-sync.service
+systemctl list-timers caldav-sync.timer
 
 # 2. 查看最近日志
-tail -50 /home/admin/.openclaw/logs/caldav_sync.log
+tail -50 /home/admin/.openclaw/logs/caldav_sync_full.log
+journalctl -u caldav-sync.service -n 30
 
-# 3. 查看同步状态
-cat /home/admin/.openclaw/data/caldav_sync_state.json | jq
+# 3. 检查同步状态
+cat /home/admin/.openclaw/data/caldav_sync_state_v2.json | jq
 
-# 4. 手动触发测试
-python3 /home/admin/.openclaw/scripts/caldav_sync.py
+# 4. 手动触发同步
+python3 /home/admin/.openclaw/scripts/caldav_sync_full.py
 ```
 
 ---
 
-## 🚨 常见问题
+## 🚨 常见故障
 
-### 1. CalDAV 连接失败
+### 1. 同步完全失败
 
-**症状**:
-```
-ERROR CalDAV 获取失败：Connection refused
-ERROR CalDAV 获取失败：401 Unauthorized
-```
+**症状**: 飞书日历无事件，日志显示错误
 
-**诊断步骤**:
+**排查步骤**:
 
 ```bash
-# 测试网络连通性
-curl -v https://caldav.wps.cn
+# 步骤 1: 检查 CalDAV 连通性
+python3 -c "
+import caldav
+c = caldav.DAVClient(
+    url='https://caldav.wps.cn',
+    username='u_tHmFYAfGi9zhrD',
+    password='KAbrDeKq4xfdMXBDuUy5Y06aPM'
+)
+print('日历数:', len(c.principal().calendars()))
+"
 
-# 测试凭据 (替换实际用户名密码)
-curl -u "YOUR_USER:YOUR_PASS" -X PROPFIND https://caldav.wps.cn/ -H "Depth: 1"
+# 步骤 2: 检查飞书 Token 是否有效
+node -e "
+const fs=require('fs'), crypto=require('crypto');
+const d=fs.readFileSync(process.env.HOME+'/.local/share/openclaw-feishu-uat/cli_a93c20939cf8dbef_ou_04405f4e9dbe76c2cf241402bc2096b7.enc');
+const k=fs.readFileSync(process.env.HOME+'/.local/share/openclaw-feishu-uat/master.key');
+const iv=d.subarray(0,12), tag=d.subarray(12,28), enc=d.subarray(28);
+const dec=crypto.createDecipheriv('aes-256-gcm',k,iv);
+dec.setAuthTag(tag);
+const t=JSON.parse(Buffer.concat([dec.update(enc),dec.final()]).toString());
+console.log('Token 过期:', new Date(t.expiresAt).toISOString());
+console.log('是否有效:', Date.now()<t.expiresAt ? '是' : '否');
+"
 
-# 检查 Python caldav 库
-python3 -c "import caldav; print(caldav.__version__)"
+# 步骤 3: 查看错误日志
+grep "ERROR" /home/admin/.openclaw/logs/caldav_sync_full.log | tail -10
 ```
 
-**解决方案**:
-1. 验证 `caldav_sync.py` 中的 `CALDAV_USER` 和 `CALDAV_PASS` 正确
-2. 检查服务器防火墙是否允许 outbound HTTPS (443)
-3. 如果 WPS 密码变更,同步更新脚本
+**可能原因**:
+- CalDAV 凭据变更 → 更新 `caldav_sync_full.py` 中的 `CALDAV_USER`/`CALDAV_PASS`
+- 飞书 Token 过期 → 重新 OAuth 授权 (在飞书中向 work-hub 发送 `/oauth`)
+- 日历 ID 变更 → 通过 `/calendar/v4/calendars` API 重新获取
 
 ---
 
-### 2. 事件未同步到飞书
+### 2. Token 刷新失败
 
-**症状**:
-- `caldav_events_pending.json` 有待同步事件
-- 飞书日历中未创建对应事件
+**症状**: `code: 20014, message: The app access token passed is invalid`
 
-**诊断步骤**:
-
-```bash
-# 1. 检查待同步事件
-cat /home/admin/.openclaw/data/caldav_events_pending.json | jq '.pending_events | length'
-
-# 2. 查看 work-hub 是否消费
-cat /home/admin/.openclaw/data/caldav_events_pending.json | jq '.pending_events[] | {summary, start_time}'
-
-# 3. 检查 work-hub 日志
-grep -i "caldav\|calendar_event" /home/admin/.openclaw/agents/work-hub/logs/*.log | tail -20
-```
-
-**解决方案**:
-
-这是**两步流程**的问题:
-1. ✅ `caldav_sync.py` 已成功输出待同步事件
-2. ❌ work-hub 未消费 `caldav_events_pending.json`
-
-**手动消费流程**:
-```bash
-# 1. 查看待同步事件
-cat /home/admin/.openclaw/data/caldav_events_pending.json
-
-# 2. 通过 OpenClaw 发送指令给 work-hub
-# (在 Telegram 或飞书中向 work-hub 发送)
-"请读取 /home/admin/.openclaw/data/caldav_events_pending.json 并创建飞书日历事件"
-```
-
-**自动化建议**:
-- 可以添加 systemd service 依赖,在 `caldav_sync.py` 完成后自动触发 work-hub
-- 或使用 OpenClaw `sessions_send` 工具自动推送
-
----
-
-### 3. 事件重复创建
-
-**症状**:
-- 飞书日历中出现多个相同事件
-
-**原因**:
-- `caldav_sync_state.json` 状态文件丢失或损坏
-- `synced_event_uids` 被清空
+**根因**: refresh_token 已过期或无效
 
 **解决方案**:
 
 ```bash
-# 1. 备份当前状态
-cp /home/admin/.openclaw/data/caldav_sync_state.json /tmp/caldav_state_backup_$(date +%Y%m%d_%H%M%S).json
+# 方案 1: 重新 OAuth 授权 (推荐)
+# 在飞书中向 work-hub (金牛) 发送任意消息，触发自动授权
 
-# 2. 检查状态文件
-cat /home/admin/.openclaw/data/caldav_sync_state.json | jq '.synced_event_uids | length'
+# 方案 2: 导出新 token
+node /home/admin/.openclaw/scripts/export_feishu_token.js
 
-# 3. 如果为空,重置状态 (会从 2026-04-01 重新同步)
-echo '{"last_sync": "2026-04-01T00:00:00+08:00", "synced_event_uids": [], "synced_count": 0}' > /home/admin/.openclaw/data/caldav_sync_state.json
-
-# 4. 手动触发一次同步
-python3 /home/admin/.openclaw/scripts/caldav_sync.py
+# 方案 3: 手动刷新 (使用正确的 v2 endpoint)
+node -e "
+const fs=require('fs'), https=require('https');
+const tokenData=JSON.parse(fs.readFileSync('/home/admin/.openclaw/data/feishu_user_refresh_token.json'));
+const appSecret=JSON.parse(fs.readFileSync('/home/admin/.openclaw/runtime-secrets.json'))['/FEISHU_APP_SECRET'];
+const body=new URLSearchParams({
+  grant_type:'refresh_token',
+  refresh_token:tokenData.refresh_token,
+  client_id:'cli_a93c20939cf8dbef',
+  client_secret:appSecret
+}).toString();
+const req=https.request('https://open.feishu.cn/open-apis/authen/v2/oauth/token',{
+  method:'POST',
+  headers:{'Content-Type':'application/x-www-form-urlencoded'}
+},(res)=>{let d='';res.on('data',c=>d+=c);res.on('end',()=>console.log(JSON.parse(d)));});
+req.on('error',e=>console.error(e));
+req.write(body);
+req.end();
+"
 ```
 
-**防止重复创建**:
-- work-hub 在创建飞书事件前,应先查询是否存在相同 UID 的事件
-- 使用飞书事件的 `extra` 字段存储 CalDAV UID
+**关键注意事项**:
+- ✅ 使用 **v2 endpoint**: `/authen/v2/oauth/token`
+- ✅ 使用 **form-urlencoded** 格式
+- ❌ 不要使用 v1 endpoint (`/authen/v1/oidc/refresh_access_token`)
+- ❌ 不要使用 JSON 格式
 
 ---
 
-### 4. systemd Timer 未触发
+### 3. 日历 ID 错误
 
-**症状**:
+**症状**: `invalid calendar_id` (code: 191001)
+
+**解决方案**:
+
 ```bash
-systemctl list-timers caldav-sync.timer
-# 显示 "n/a" 或未列出
+# 获取用户日历列表
+node -e "
+const fs=require('fs'), https=require('https');
+const t=JSON.parse(fs.readFileSync('/home/admin/.openclaw/data/feishu_user_access_token.json'));
+const req=https.request('https://open.feishu.cn/open-apis/calendar/v4/calendars',{
+  method:'GET',
+  headers:{'Authorization':'Bearer '+t.access_token}
+},(res)=>{let d='';res.on('data',c=>d+=c);res.on('end',()=>console.log(JSON.parse(d)));});
+req.end();
+"
+
+# 更新日历 ID 到脚本
+# 编辑 caldav_sync_full.py 中的 FEISHU_CALENDAR_ID
 ```
 
-**诊断步骤**:
+---
+
+### 4. 事件重复创建
+
+**症状**: 飞书日历中出现多个相同事件
+
+**根因**: 状态文件丢失或损坏
+
+**解决方案**:
 
 ```bash
-# 1. 检查 timer 是否启用
-systemctl is-enabled caldav-sync.timer
+# 备份当前状态
+cp /home/admin/.openclaw/data/caldav_sync_state_v2.json /tmp/caldav_state_backup.json
 
-# 2. 检查服务文件是否存在
-ls -la /etc/systemd/system/caldav-sync.*
+# 检查状态文件
+cat /home/admin/.openclaw/data/caldav_sync_state_v2.json | jq
 
-# 3. 重新加载 systemd 配置
-sudo systemctl daemon-reload
-
-# 4. 启用并启动 timer
-sudo systemctl enable caldav-sync.timer
-sudo systemctl start caldav-sync.timer
-
-# 5. 验证状态
-systemctl list-timers caldav-sync.timer
+# 如果损坏，重置状态 (会重新同步所有事件)
+rm /home/admin/.openclaw/data/caldav_sync_state_v2.json
+python3 /home/admin/.openclaw/scripts/caldav_sync_full.py
 ```
 
 ---
 
 ### 5. iCal 解析警告
 
-**症状**:
-```
-WARNING Ical data was modified to avoid compatibility issues
-(Your calendar server breaks the icalendar standard)
-```
+**症状**: `Ical data was modified to avoid compatibility issues`
 
-**原因**:
-- WPS CalDAV 服务器返回的 iCal 数据不完全符合 RFC 5545 标准
-- `icalendar` 库自动修复了格式问题 (通常是缺少 `DTSTAMP` 字段)
+**原因**: WPS CalDAV 服务器返回的 iCal 数据不标准 (缺少 DTSTAMP)
 
-**影响**:
-- ⚠️ **无害**,不影响功能
-- 日志会被这些警告刷屏,影响查看
+**影响**: 无害，`icalendar` 库自动修复
+
+**处理**: 忽略此警告，已在代码中降低日志级别
+
+---
+
+### 6. systemd Timer 未触发
+
+**症状**: `systemctl list-timers` 中无 caldav-sync
 
 **解决方案**:
 
-```python
-# 在 caldav_sync.py 中降低日志级别
-import logging
-logging.getLogger('icalendar').setLevel(logging.ERROR)
-```
-
----
-
-## 📊 日志分析示例
-
-### 正常同步日志
-
-```
-2026-04-09 23:51:26,797 INFO === CalDAV 同步开始 ===
-2026-04-09 23:51:26,798 INFO 同步起始时间:2026-04-09 23:41:28.021804
-2026-04-09 23:51:30,098 INFO 扫描日历:ab61ee56-dcee-8fc4-9598-9cf150bf73ac
-2026-04-09 23:51:31,375 INFO 从 CalDAV 获取到 7 个事件
-2026-04-09 23:51:31,376 INFO 待同步事件:0 个
-2026-04-09 23:51:31,378 INFO 事件已保存到:/home/admin/.openclaw/data/caldav_events_pending.json
-2026-04-09 23:51:31,378 INFO === 同步完成 ===
-```
-
-### 异常日志 (连接失败)
-
-```
-2026-04-09 23:51:26,797 INFO === CalDAV 同步开始 ===
-2026-04-09 23:51:26,798 INFO 同步起始时间:2026-04-09 23:41:28.021804
-2026-04-09 23:51:30,098 ERROR CalDAV 获取失败:Connection refused
-2026-04-09 23:51:30,098 ERROR === 同步失败 ===
-```
-
-### 日志监控命令
-
 ```bash
-# 实时监控
-tail -f /home/admin/.openclaw/logs/caldav_sync.log
-
-# 只看错误
-grep "ERROR" /home/admin/.openclaw/logs/caldav_sync.log | tail -20
-
-# 统计同步事件数
-grep "待同步事件" /home/admin/.openclaw/logs/caldav_sync.log | tail -10
-
-# 查看同步频率 (应该每 10 分钟一次)
-grep "=== CalDAV 同步开始 ===" /home/admin/.openclaw/logs/caldav_sync.log | tail -20
-```
-
----
-
-## 🔄 重置同步状态
-
-### 完全重置 (从零开始)
-
-```bash
-# 1. 停止 timer
-sudo systemctl stop caldav-sync.timer
-
-# 2. 备份当前状态
-cp /home/admin/.openclaw/data/caldav_sync_state.json /tmp/caldav_state_final_backup.json
-
-# 3. 清空状态文件
-echo '{"last_sync": "2026-04-01T00:00:00+08:00", "synced_event_uids": [], "synced_count": 0}' > /home/admin/.openclaw/data/caldav_sync_state.json
-
-# 4. 清空待同步事件
-echo '{"pending_events": [], "synced_count": 0, "timestamp": "'$(date -Iseconds)'"}' > /home/admin/.openclaw/data/caldav_events_pending.json
-
-# 5. 重启 timer
+sudo systemctl daemon-reload
+sudo systemctl enable caldav-sync.timer
 sudo systemctl start caldav-sync.timer
-
-# 6. 手动触发一次测试
-python3 /home/admin/.openclaw/scripts/caldav_sync.py
-
-# 7. 检查结果
-cat /home/admin/.openclaw/data/caldav_sync_state.json | jq
+sudo systemctl status caldav-sync.timer
 ```
 
 ---
 
-## 📞 获取帮助
+## 🔑 关键文件位置
 
-如果以上步骤无法解决问题:
-
-1. **收集诊断信息**:
-   ```bash
-   # 打包所有相关文件
-   tar czf /tmp/caldav_diagnostic_$(date +%Y%m%d_%H%M%S).tar.gz \
-     /home/admin/.openclaw/logs/caldav_sync.log \
-     /home/admin/.openclaw/data/caldav_sync_state.json \
-     /home/admin/.openclaw/data/caldav_events_pending.json \
-     /etc/systemd/system/caldav-sync.* \
-     /home/admin/.openclaw/scripts/caldav_sync.py
-   ```
-
-2. **联系维护者**:
-   - work-hub (金牛): 飞书日历事件创建问题
-   - 运维: 系统配置和网络问题
+| 文件 | 路径 | 说明 |
+|------|------|------|
+| **主脚本** | `/home/admin/.openclaw/scripts/caldav_sync_full.py` | 同步逻辑 |
+| **状态文件** | `/home/admin/.openclaw/data/caldav_sync_state_v2.json` | UID 映射 |
+| **日志文件** | `/home/admin/.openclaw/logs/caldav_sync_full.log` | 运行日志 |
+| **Token 存储** | `~/.local/share/openclaw-feishu-uat/*.enc` | 加密 OAuth token |
+| **Master Key** | `~/.local/share/openclaw-feishu-uat/master.key` | 32 字节 AES 密钥 |
+| **systemd Service** | `/etc/systemd/system/caldav-sync.service` | 服务配置 |
+| **systemd Timer** | `/etc/systemd/system/caldav-sync.timer` | 定时器配置 |
 
 ---
 
-最后更新: 2026-04-09
+## 🛠️ 维护命令
+
+```bash
+# 查看同步统计
+cat /home/admin/.openclaw/data/caldav_sync_state_v2.json | jq '{
+  tracked: (.caldav_uids | length),
+  synced: .synced_count,
+  deleted: .deleted_count,
+  last_sync: .last_sync
+}'
+
+# 手动触发同步
+python3 /home/admin/.openclaw/scripts/caldav_sync_full.py
+
+# 查看实时日志
+tail -f /home/admin/.openclaw/logs/caldav_sync_full.log
+
+# 检查 systemd 状态
+sudo systemctl status caldav-sync.timer
+
+# 重置同步状态 (谨慎使用)
+rm /home/admin/.openclaw/data/caldav_sync_state_v2.json
+python3 /home/admin/.openclaw/scripts/caldav_sync_full.py
+```
+
+---
+
+## 📞 升级路径
+
+如需升级本系统，参考以下文档:
+- `docs/DESIGN_LOG.md`: 完整设计历程和排错历史
+- `docs/SKILL.md`: AI Coding 工具操作指南
+
+---
+
+最后更新: 2026-04-10
