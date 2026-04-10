@@ -619,25 +619,15 @@ def full_sync():
     
     save_state(state)
     
-    # 7. 输出摘要
+    # 7. 输出摘要 (仅写入日志文件，不输出到 stdout)
     logger.info("=" * 60)
     logger.info("=== 同步完成 ===")
-    logger.info(f"📊 总计: CalDAV 事件 {len(caldav_events)} 个")
-    logger.info(f"➕ 新增: {created_count} 个")
-    logger.info(f"🔄 更新: {updated_count} 个")
-    logger.info(f"🗑️ 删除: {deleted_count} 个")
-    logger.info(f"💾 已追踪: {len(caldav_uids)} 个")
+    logger.info(f"CalDAV 事件: {len(caldav_events)} 个")
+    logger.info(f"新增: {created_count} 个")
+    logger.info(f"更新: {updated_count} 个")
+    logger.info(f"删除: {deleted_count} 个")
+    logger.info(f"已追踪: {len(caldav_uids)} 个")
     logger.info("=" * 60)
-    
-    # 打印到 stdout (供 systemd 日志捕获)
-    print(f"\n{'='*60}")
-    print(f"CalDAV → 飞书日历 同步完成")
-    print(f"  CalDAV 事件: {len(caldav_events)} 个")
-    print(f"  新增: {created_count} 个")
-    print(f"  更新: {updated_count} 个")
-    print(f"  删除: {deleted_count} 个")
-    print(f"  已追踪: {len(caldav_uids)} 个")
-    print(f"{'='*60}")
 
 if __name__ == "__main__":
     try:
