@@ -32,15 +32,20 @@ warnings.filterwarnings('ignore', message='Ical data was modified')
 
 # CalDAV 配置
 CALDAV_URL = "https://caldav.wps.cn"
-CALDAV_USER = "u_H7q73bsRsFUyck"
-CALDAV_PASS = "2HotzgGR5VDKiBqXwtYG50XbmZ"
+CALDAV_USER = "u_tHmFYAfGi9zhrD"
+CALDAV_PASS = "KAbrDeKq4xfdMXBDuUy5Y06aPM"
 
 # 飞书 Open API 配置
 FEISHU_APP_ID = "cli_a93c20939cf8dbef"
 FEISHU_APP_SECRET_REF = "/FEISHU_APP_SECRET"  # 从 runtime-secrets.json 读取
 
-# 飞书日历 ID (金牛的主日历)
-FEISHU_CALENDAR_ID = "feishu.cn_skWj58NmuUKikMD9qzCfNf@group.calendar.feishu.cn"
+# 飞书用户 OAuth 配置 (CC 用户)
+FEISHU_USER_OPEN_ID = "ou_04405f4e9dbe76c2cf241402bc2096b7"  # CC 用户的 open_id
+FEISHU_USER_REFRESH_TOKEN_FILE = "/home/admin/.openclaw/data/feishu_user_refresh_token.json"
+
+# 飞书日历 ID (CC 用户的主日历)
+# 注意: 必须通过 /calendar/v4/calendars API 获取真实的 calendar_id
+FEISHU_CALENDAR_ID = "feishu.cn_ymY7s23MqxLG33KkwElcuf@group.calendar.feishu.cn"
 
 # 状态文件
 STATE_FILE = "/home/admin/.openclaw/data/caldav_sync_state_v2.json"
@@ -92,17 +97,19 @@ def save_state(state):
 # ==================== 飞书 API 客户端 ====================
 
 class FeishuCalendarClient:
-    """飞书日历 API 客户端"""
+    """飞书日历 API 客户端 (支持用户 OAuth 模式)"""
     
-    def __init__(self, app_id, app_secret):
+    def __init__(self, app_id, user_open_id, use_user_oauth=True):
         self.app_id = app_id
-        self.app_secret = app_secret
+        self.user_open_id = user_open_id
+        self.use_user_oauth = use_user_oauth  # True=用户 OAuth, False=应用 tenant token
         self.access_token = None
         self.token_expires_at = 0
+        self.refresh_token = None
     
     @staticmethod
     def load_feishu_secret():
-        """从 runtime-secrets.json 读取飞书密钥"""
+        """从 runtime-secrets.json 读取飞书应用密钥"""
         secrets_file = "/home/admin/.openclaw/runtime-secrets.json"
         try:
             with open(secrets_file) as f:
@@ -112,22 +119,138 @@ class FeishuCalendarClient:
             logger.error(f"读取 runtime-secrets.json 失败: {e}")
             return ""
     
+    def load_user_refresh_token(self):
+        """加载用户 refresh_token (支持 openclaw-lark 加密存储)"""
+        # 优先从 openclaw-lark 加密存储读取
+        uat_dir = os.path.expanduser("~/.local/share/openclaw-feishu-uat")
+        uat_file = os.path.join(uat_dir, f"{self.app_id}_{self.user_open_id}.enc")
+        
+        if os.path.exists(uat_file):
+            logger.info(f"✅ 找到 openclaw-lark token 存储: {uat_file}")
+            # 注意：.enc 文件是 AES-256-GCM 加密的，需要 master.key 解密
+            # 这里我们标记为已找到，实际解密需要使用 openclaw-lark 的 token-store.js
+            # 暂时先尝试从我们自己的 refresh_token 文件读取
+            logger.warning("⚠️ openclaw-lark token 存储为加密格式，需要使用 Node.js 解密")
+        
+        # 从我们自己的 refresh_token 文件读取 (备用方案)
+        try:
+            if os.path.exists(FEISHU_USER_REFRESH_TOKEN_FILE):
+                with open(FEISHU_USER_REFRESH_TOKEN_FILE) as f:
+                    data = json.load(f)
+                    self.refresh_token = data.get("refresh_token", "")
+                    return self.refresh_token
+        except Exception as e:
+            logger.warning(f"加载 refresh_token 失败: {e}")
+        
+        return ""
+    
+    def save_user_refresh_token(self, refresh_token):
+        """保存用户 refresh_token"""
+        try:
+            data = {
+                "refresh_token": refresh_token,
+                "open_id": self.user_open_id,
+                "updated_at": datetime.now().isoformat()
+            }
+            with open(FEISHU_USER_REFRESH_TOKEN_FILE, 'w') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            logger.info("✅ refresh_token 已保存")
+        except Exception as e:
+            logger.error(f"保存 refresh_token 失败: {e}")
+    
     def get_access_token(self):
-        """获取访问令牌 (自动刷新)"""
+        """获取访问令牌 (自动刷新，支持用户 OAuth)"""
         if time.time() < self.token_expires_at:
             return self.access_token
         
-        # 动态读取密钥
-        if not self.app_secret:
-            self.app_secret = self.load_feishu_secret()
-            if not self.app_secret:
-                raise Exception("飞书应用密钥未配置")
+        if self.use_user_oauth:
+            # 用户 OAuth 模式
+            return self._get_user_access_token()
+        else:
+            # 应用 tenant_access_token 模式
+            return self._get_tenant_access_token()
+    
+    def _get_user_access_token(self):
+        """使用已导出的 access_token（从 openclaw-lark 解密获取）"""
+        # 直接从导出的 access_token 文件读取
+        token_file = "/home/admin/.openclaw/data/feishu_user_access_token.json"
+        if os.path.exists(token_file):
+            with open(token_file) as f:
+                token_data = json.load(f)
+            
+            # 检查是否过期
+            expires_at = datetime.fromisoformat(token_data["expires_at"])
+            # 处理时区兼容性问题
+            now = datetime.now()
+            if expires_at.tzinfo is not None:
+                now = datetime.now(expires_at.tzinfo)
+            
+            if now < expires_at:
+                self.access_token = token_data["access_token"]
+                self.token_expires_at = expires_at.timestamp()
+                logger.info("✅ 用户 access_token 加载成功")
+                return self.access_token
+            else:
+                logger.warning("⚠️ access_token 已过期，需要刷新")
+        
+        # 如果没有有效的 access_token，尝试用 refresh_token 刷新
+        if not self.refresh_token:
+            self.refresh_token = self.load_user_refresh_token()
+            if not self.refresh_token:
+                raise Exception(
+                    f"用户 OAuth refresh_token 未配置\n"
+                    f"请先运行: python3 /home/admin/.openclaw/scripts/feishu_oauth_setup.py\n"
+                    f"或在飞书中向 work-hub 发送: /oauth"
+                )
+        
+        app_secret = self.load_feishu_secret()
+        if not app_secret:
+            raise Exception("飞书应用密钥未配置")
+        
+        # 使用 refresh_token 刷新 access_token
+        resp = requests.post(
+            "https://open.feishu.cn/open-apis/authen/v1/oidc/refresh_access_token",
+            headers={"Content-Type": "application/json"},
+            json={
+                "grant_type": "refresh_token",
+                "refresh_token": self.refresh_token,
+                "client_id": self.app_id,
+                "client_secret": app_secret
+            }
+        )
+        data = resp.json()
+        
+        if data.get("code") != 0:
+            # refresh_token 过期，需要重新授权
+            logger.error(f"refresh_token 失效: {data}")
+            raise Exception(
+                f"用户 OAuth refresh_token 已过期\n"
+                f"请重新授权: 在飞书中向 work-hub 发送 /oauth"
+            )
+        
+        token_data_resp = data.get("data", {})
+        self.access_token = token_data_resp.get("access_token", "")
+        self.refresh_token = token_data_resp.get("refresh_token", self.refresh_token)
+        expires_in = token_data_resp.get("expires_in", 7200)
+        self.token_expires_at = time.time() + expires_in - 300
+        
+        if token_data_resp.get("refresh_token"):
+            self.save_user_refresh_token(token_data_resp["refresh_token"])
+        
+        logger.info("✅ 用户 access_token 刷新成功")
+        return self.access_token
+    
+    def _get_tenant_access_token(self):
+        """获取应用 tenant_access_token"""
+        app_secret = self.load_feishu_secret()
+        if not app_secret:
+            raise Exception("飞书应用密钥未配置")
         
         resp = requests.post(
             FEISHU_TOKEN_URL,
             json={
                 "app_id": self.app_id,
-                "app_secret": self.app_secret
+                "app_secret": app_secret
             }
         )
         data = resp.json()
@@ -136,8 +259,8 @@ class FeishuCalendarClient:
             raise Exception(f"获取飞书令牌失败: {data}")
         
         self.access_token = data["tenant_access_token"]
-        self.token_expires_at = time.time() + data.get("expire", 7200) - 300  # 提前 5 分钟刷新
-        logger.info("✅ 飞书访问令牌获取成功")
+        self.token_expires_at = time.time() + data.get("expire", 7200) - 300
+        logger.info("✅ 应用 tenant_access_token 获取成功")
         return self.access_token
     
     def list_calendars(self):
@@ -410,10 +533,15 @@ def full_sync():
         logger.warning("⚠️ 未获取到 CalDAV 事件")
         return
     
-    # 3. 初始化飞书客户端
-    feishu_client = FeishuCalendarClient(FEISHU_APP_ID, "")  # 空密钥,从 runtime-secrets.json 读取
+    # 3. 初始化飞书客户端 (用户 OAuth 模式)
+    feishu_client = FeishuCalendarClient(
+        app_id=FEISHU_APP_ID,
+        user_open_id=FEISHU_USER_OPEN_ID,
+        use_user_oauth=True  # 使用用户 OAuth 身份
+    )
     calendar_id = FEISHU_CALENDAR_ID
-    logger.info(f"📅 使用飞书日历: {calendar_id}")
+    logger.info(f"📅 使用飞书用户日历: {calendar_id}")
+    logger.info(f"👤 用户 open_id: {FEISHU_USER_OPEN_ID}")
     
     # 4. 同步逻辑: 新增和更新
     current_caldav_uids = set()
