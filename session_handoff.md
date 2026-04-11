@@ -1,12 +1,12 @@
 # Session Handoff
 
-Last updated: 2026-04-09 (OpenClaw 升级至 2026.4.8)
+Last updated: 2026-04-11 (Agent System Redesign v1.0)
 
 ## Current repo state
 
 - Branch: `dev`
-- Latest commit: `d4c5e41` - feat: 添加飞书网盘安全操作脚本和受保护文件夹配置
-- **新变更**：OpenClaw 升级 2026.4.5 → 2026.4.8
+- Latest commit: `fe73543` - Merge branch 'dev' of github.com:All4worldjz/MySIBuddy into dev
+- **新变更**：Agent System Redesign - 9 agents → 8 agents
 
 ---
 
@@ -475,3 +475,90 @@ OpenClaw 安全设计限制：**sandboxed agent 不能 spawn unsandboxed subagen
 2. `docs/troubleshooting_sandbox_spawn.md`: **新增** - Sandbox Spawn 限制排错指南
 3. `QWEN.md`: 项目概述和职能边界 (已更新 Sandbox 策略)
 4. `session_handoff.md`: 最新变更日志
+
+---
+
+## 2026-04-11: Agent System Redesign v1.0 (重大架构变更)
+
+### 概要
+
+| 项目 | 变更前 | 变更后 |
+|------|--------|--------|
+| **Agent 数量** | 9 | **8** |
+| **Agent 列表** | chief-of-staff, coder-hub, sysop, work-hub, venture-hub, tech-mentor, life-hub, product-studio, zh-scribe | **neo, link, trinity, morpheus, oracle, smith, architect, theodore** |
+| **Community Spaces** | 无 | **5 个** (cc-office, council, commons, crucible, chapel) |
+| **Feishu Folders** | 无 | **8 个** (MySiBuddy, communities, archives, + 5 spaces) |
+
+### Agent 映射关系
+
+| 旧 Agent | 新 Agent | 说明 |
+|----------|----------|------|
+| chief-of-staff | neo | 重命名 + Guardian 角色 |
+| coder-hub + sysop | link | 合并 |
+| work-hub | trinity | 重命名 |
+| venture-hub | morpheus | 重命名 |
+| tech-mentor + life-hub | oracle | 合并 |
+| product-studio | architect | 重命名 |
+| zh-scribe | theodore | 重命名 |
+| (新) | smith | 新建 - Challenger |
+
+### 新增 Feishu 文件夹
+
+| 文件夹 | Token | 用途 |
+|--------|-------|------|
+| MySiBuddy | WpEWfi4rEltBxqd08B4c6JASnFf | 根目录 |
+| communities | VAhJf9VDwl66mOdkvCLcTMGDnch | 社区空间 |
+| archives | Q8ybfocG3loc6MdKDmzcFDrSnMg | 归档 |
+| cc-office | F5NEfkat6lo1XBd4S9scNPRVn9f | CC 私人空间 |
+| council | OXRSf4sQMlow5tdfhkicMyzpn0f | 决策议事厅 |
+| commons | NNFuflvRmlyhdkd3PtqcChHSnag | 共享工作区 |
+| crucible | SlrifKwYwlASXJdkvrjcyJSznWb | 挑战测试场 |
+| chapel | V99oflFU8llnu2dSNFnc4qzjnuf | 反思智慧空间 |
+
+### 新增 Cron Jobs (社区提醒)
+
+| Job ID | 名称 | Owner | Schedule |
+|--------|------|-------|----------|
+| 3ee2f19b | Daily Chapel Reminder | neo | 每天 08:00 |
+| 0a53f6d6 | Weekly Council Reminder | neo | 周日 20:00 |
+| 92f901f0 | Weekly Crucible Reminder | neo | 周三 20:00 |
+| 22843e8f | Weekly Commons Toast Reminder | neo | 周五 18:00 |
+| cdea7c4a | Chapel Sabbath Reminder | neo | 周日 08:00 |
+| 971927df | Monthly Retrospective Reminder | neo | 周五 20:00 |
+
+### Cron Jobs Owner 变更
+
+| Job | 原 Owner | 新 Owner | 状态 |
+|-----|----------|----------|------|
+| 情报雷达 (早报/晚报/突发) | chief-of-staff | oracle | ✅ ok |
+| GPU/CPU/内存/硬盘/AIDC 建设情报 | work-hub | oracle | ✅ ok |
+| 存储与 AI 推理硬件每日报价 | work-hub | morpheus | ✅ ok |
+| 每日天气播报 | life-hub | trinity | ✅ ok |
+
+### 遗产继承
+
+| 遗产 | 接收方 |
+|------|--------|
+| 系统维护方法论 | link |
+| English Coaching | neo + oracle |
+| Intelligence Radar | oracle |
+| KM-Vault | theodore + link |
+
+### 已知问题
+
+1. **KM-Vault Docker**: 容器未构建，脚本缺失
+2. **系统健康 Jobs**: 部分缺失，需后续补充
+3. **安全警告**: 多用户设置检测到，插件工具策略宽松
+
+### 相关文件
+
+- `founding-docs/execution-log.md`: 完整执行日志
+- `founding-docs/design-docs/`: 设计文档 (MySiBuddy-Complete-Pack-Summary.md, MySiBuddy-Complete-Inheritance-Index.md 等)
+
+### 回滚（如需要）
+
+```bash
+# 从备份恢复
+./scripts/backup_openclaw_config.sh --restore --from docs/agents-config-backup-YYYYMMDD/
+systemctl --user restart openclaw-gateway
+```
