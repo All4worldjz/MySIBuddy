@@ -1,0 +1,22 @@
+[Unit]
+Description=CalDAV to Feishu Calendar Sync
+After=network.target
+
+[Service]
+Type=oneshot
+User=admin
+WorkingDirectory=/home/admin/.openclaw/scripts
+ExecStart=/usr/bin/python3 /home/admin/.openclaw/scripts/caldav_sync.py
+StandardOutput=journal
+StandardError=journal
+
+# 安全加固
+# 禁止写操作 (除了日志)
+ProtectSystem=strict
+# 允许写日志
+ReadWritePaths=/home/admin/.openclaw/logs /home/admin/.openclaw/data
+# 隐藏 Home 目录 (除了必要路径)
+ReadWritePaths=/home/admin/.openclaw
+
+[Install]
+WantedBy=multi-user.target

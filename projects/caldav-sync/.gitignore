@@ -1,0 +1,14 @@
+# CalDAV 同步项目 - 敏感文件排除
+
+# Python 凭据文件 (如果包含明文密码)
+# .env
+# credentials.json
+
+# 运行时数据和状态文件 (不在 Git 管理下)
+caldav_sync_state.json
+caldav_events_pending.json
+*.log
+
+# OS 文件
+.DS_Store
+Thumbs.db
