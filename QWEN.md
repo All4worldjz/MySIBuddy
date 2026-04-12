@@ -4,25 +4,38 @@
 
 **MySiBuddy** 是一个**控制平面仓库**，用于部署、加固和运维基于 OpenClaw 的个人智能体系统。这**不是**应用源代码仓库，而是生产环境的配置和运维仓库。
 
-生产系统运行在远程 Linux 服务器 `admin@47.82.234.46` 上，使用 OpenClaw `2026.4.8` 和 Node `24.13.0`。
+生产系统运行在远程 Linux 服务器 `admin@47.82.234.46` 上，使用 OpenClaw `2026.4.9`（有更新 `2026.4.11` 可用）和 Node `24.13.0`。
 
 ### 核心架构
 
-**8 智能体集群：**
-| Agent | 别名 | 角色 | 主责域 | 渠道入口 |
-|-------|------|------|--------|----------|
-| `chief-of-staff` | 小春 | 编排器 | 跨域统筹、审批、系统维护 | Telegram chief |
-| `work-hub` | 金牛 | 工作中枢 | 正式工作事务（不含公众号） | Feishu work |
-| `venture-hub` | - | 创业中枢 | 创业战略/PMF/MVP（不含技术选型） | Telegram personal (群组) |
-| `life-hub` | 小机 | 生活中枢 | 生活财务事务（不含学习安排） | Telegram personal |
-| `product-studio` | - | 产品设计 | PRD、产品设计（后台specialist） | 无直接入口 |
-| `zh-scribe` | 水哥 | 中文成文 | 公众号全流程、中文成文、读书笔记 | Feishu scribe |
-| `tech-mentor` | 大师 | AI导师 | 技术选型、科技学习、前沿跟踪 | Telegram mentor |
-| `coder-hub` | 小码哥 | 编程助手 | 编程、代码生成与分析、CLI调用 | 无直接入口 (仅限内部调用) |
+**8 智能体集群（2026-04-12 完整配置）：**
+| Agent | 角色 | 主责域 | 渠道入口 | 备注 |
+|-------|------|--------|----------|------|
+| `neo` | Guardian | 系统守护、全局统筹、审批决策 | Telegram neo, Feishu neo | 原 chief-of-staff |
+| `link` | Operator | 编程助手+系统运维合并 | Telegram link, Feishu link | 原 coder-hub + sysop |
+| `trinity` | Worker | 工作中枢、职场事务 | Telegram trinity, Feishu work | 原 work-hub |
+| `morpheus` | Strategist | 创业中枢、战略规划 | Telegram morpheus, Feishu morpheus | 原 venture-hub |
+| `oracle` | Mentor | AI导师+生活中枢合并 | Telegram oracle, Feishu oracle | 原 tech-mentor + life-hub |
+| `smith` | Challenger | 挑战者、批判性思维 | Telegram smith | 新建，无飞书 |
+| `architect` | Designer | 产品设计、架构规划 | Telegram architect, Feishu architect | 原 product-studio |
+| `theodore` | Scribe | 中文成文、公众号全流程 | Telegram theodore, Feishu scribe | 原 zh-scribe |
 
-**通信渠道：**
-- Telegram：3 个账号（`chief`、`personal`、`mentor`）
-- Feishu：2 个账号（`work`、`scribe`，通过 `openclaw-lark` 插件）
+**通信渠道（2026-04-12 完整配置）：**
+- Telegram：8 个账号（`neo`、`architect`、`link`、`morpheus`、`oracle`、`smith`、`theodore`、`trinity`）
+- Feishu：7 个账号（`work`、`scribe`、`neo`、`link`、`morpheus`、`oracle`、`architect`，通过 `openclaw-lark` 插件 2026.4.7）
+
+**Feishu账号与Agent绑定：**
+| Feishu账号 | App ID | 绑定Agent | 说明 |
+|------------|--------|-----------|------|
+| work | cli_a93c20939cf8dbef | trinity | 工作中枢 |
+| scribe | cli_a93e64a4c2785cb2 | theodore | 中文成文 |
+| neo | cli_a95206bcacb85cb1 | neo | 系统守护 |
+| link | cli_a93ba1f60ff85bb4 | link | 编程运维 |
+| morpheus | cli_a951f94174f95bda | morpheus | 创业战略 |
+| oracle | cli_a951fa0a74785bef | oracle | AI导师+生活 |
+| architect | cli_a951faaa34b85bb3 | architect | 产品设计 |
+
+**注意**：smith 无飞书账号，仅通过 Telegram 访问。
 
 **模型路由（2026-04-06 实际配置）：**
 - 主提供商：MiniMax（`minimax/MiniMax-M2.7`）
@@ -32,16 +45,20 @@
 
 **系统安全加固（2026-04-06 完成）：**
 - SSH：禁用 root 登录、禁用密码认证（仅密钥登录）
-- 防火墙：仅允许 SSH(22) + 已建立连接 + 本地回环
+- 防火墙：仅允许 SSH(22) + 已建立连接 + 本地回环（需优化为DROP策略）
 - Swap：4GB swapfile 配置完成
 
-**飞书网盘受保护文件夹（2026-04-08 配置）：**
-| 名称 | Token | 说明 |
-|------|-------|------|
-| CC文件柜 | `RfSrf8oMYlMyQTdbW0ZcGSE1nNb` | CC个人文件柜（禁止删除/移动） |
-| 小春文件柜 | `Xl7tfFnwQl9n6vd8Hl5c8Vy2nBd` | 共享工作目录（禁止删除/移动） |
-| 回收站 | `XcTHfLy7clpx51dBomLcvA7XnTf` | 软删除目标（30天自动清理） |
-| 📁测试归档 | `TZa9f0KaQldDPXdDnX6cF3K7nme` | 测试文件夹存放处 |
+**密钥审计状态（2026-04-12）：**
+- plaintext：18 个（各Agent的 auth-profiles.json 存储API密钥）
+- unresolved：27 个（models.json 中的 SecretRef 对象未解析）
+- **说明**：plaintext 密钥存储在 Agent 目录的 auth-profiles.json 中，这是 OpenClaw 的正常运行机制；unresolved 问题可通过 `openclaw secrets reload` 解决
+
+**系统资源状态（2026-04-12 体检）：**
+- 磁盘：49G总容量，66%使用率 (17G可用)
+- 内存：1.8G总容量，Gateway占用约721MB (40%)
+- CPU：Gateway进程占用11.1%
+- 统一搜索服务：运行正常 (端口18790)
+- Swap：4GB (使用0B)
 
 ---
 
@@ -75,7 +92,6 @@
 - `SKILL.md`：OpenClaw 配置备份技能文档
 - **功能**：备份远程服务器的 agents 配置、记忆文件、系统 JSON 配置
 - **用法**：`./scripts/backup_openclaw_config.sh [--config|--memory|--system|--all|--dry-run]`
-
 
 ---
 
@@ -167,42 +183,47 @@ ssh admin@47.82.234.46 'journalctl --user -u openclaw-gateway -n 30 --no-pager'
 
 ---
 
-## 职能边界（2026-04-06 细化）
+## 职能边界（2026-04-11 重设计后）
 
 | 职能域 | 主责Agent | 转交规则 |
 |--------|-----------|----------|
-| **公众号运营全流程** | zh-scribe | 策略、选题、正文、标题、排版、发布、数据复盘 |
-| **中文成文/研究** | zh-scribe | 公众号正文、读书笔记、历史研究、哲学研究 |
-| **纯生活学习安排** | zh-scribe | 读书计划等 |
-| **技术选型** | tech-mentor | 创业中的技术选型决策 |
-| **科技学习路径** | tech-mentor | 学习路径设计、训练考核、前沿跟踪 |
-| **创业战略** | venture-hub | PMF、MVP、实验设计（技术选型→tech-mentor） |
-| **正式工作事务** | work-hub | 不含公众号运营（公众号→zh-scribe） |
-| **生活财务事务** | life-hub | 不含学习安排（学习→zh-scribe/tech-mentor） |
+| **公众号运营全流程** | theodore | 策略、选题、正文、标题、排版、发布、数据复盘 |
+| **中文成文/研究** | theodore | 公众号正文、读书笔记、历史研究、哲学研究 |
+| **纯生活学习安排** | theodore | 读书计划等 |
+| **技术选型** | oracle | 创业中的技术选型决策 |
+| **科技学习路径** | oracle | 学习路径设计、训练考核、前沿跟踪 |
+| **创业战略** | morpheus | PMF、MVP、实验设计（技术选型→oracle） |
+| **正式工作事务** | trinity | 不含公众号运营（公众号→theodore） |
+| **生活财务事务** | oracle | 原life-hub职能合并入oracle |
+| **编程与系统运维** | link | 编程、代码生成、CLI调用、系统维护 |
+| **产品设计** | architect | PRD、产品设计、架构规划 |
+| **挑战与批判性思维** | smith | 挑战决策、批判性分析 |
+| **系统守护与全局统筹** | neo | 跨域统筹、审批决策、系统维护 |
 
 ---
 
 ## 配置约束
 
-### 智能体拓扑
-必须精确包含 8 个智能体：`chief-of-staff`, `work-hub`, `venture-hub`, `life-hub`, `product-studio`, `zh-scribe`, `tech-mentor`, `coder-hub`
+### 智能体拓扑（2026-04-11 重设计）
+必须精确包含 8 个智能体：`neo`, `link`, `trinity`, `morpheus`, `oracle`, `smith`, `architect`, `theodore`
 
-### 插件策略
+### 插件策略（2026-04-11 实际配置）
 ```json
 {
   "plugins": {
-    "allow": ["openclaw-lark", "telegram", "duckduckgo", "minimax", "openai", "qwen"],
+    "allow": ["duckduckgo", "minimax", "openclaw-lark", "telegram", "openai", "qwen", "memory-wiki"],
     "deny": ["feishu"]
   }
 }
 ```
 
-### 绑定规则
-- 必须有 7 条 `bindings` 路由规则
-- 账号到智能体的路由必须定义在顶层 `bindings`，而非智能体 prompt 文本中
-- `chief-of-staff` 的 `subagents.allowAgents` 必须包含所有 6 个工作智能体
+### 绑定规则（2026-04-11 实际配置）
+- 当前有 27 条 `bindings` 路由规则
+- 包含直接对话路由和群组路由
+- 账号到智能体的路由定义在顶层 `bindings`，而非智能体 prompt 文本中
+- `neo` 的 `tools.agentToAgent.allow` 必须包含所有 8 个智能体
 
-### 多智能体协作
+### 多智能体协作（2026-04-11 实际配置）
 ```json
 {
   "tools": {
@@ -210,7 +231,16 @@ ssh admin@47.82.234.46 'journalctl --user -u openclaw-gateway -n 30 --no-pager'
     "sessions": { "visibility": "all" },
     "agentToAgent": {
       "enabled": true,
-      "allow": ["chief-of-staff", "work-hub", "venture-hub", "life-hub", "product-studio", "zh-scribe", "tech-mentor", "coder-hub"]
+      "allow": ["neo", "link", "trinity", "morpheus", "oracle", "smith", "architect", "theodore"]
+    },
+    "web": {
+      "search": {
+        "provider": "unified_search",
+        "enabled": true
+      },
+      "fetch": {
+        "enabled": true
+      }
     }
   }
 }
@@ -220,21 +250,21 @@ ssh admin@47.82.234.46 'journalctl --user -u openclaw-gateway -n 30 --no-pager'
 
 **所有 agents 移除沙盒限制**，通过工具权限控制实现安全隔离：
 
-| Agent | 别名 | Sandbox | Exec 权限 | 说明 |
+| Agent | 角色 | Sandbox | Exec 权限 | 说明 |
 |-------|------|---------|-----------|------|
-| `chief-of-staff` | 小春 | off | ✅ 允许 | 编排器，需要系统级访问 |
-| `coder-hub` | 小码哥 | off | ✅ 允许 | 编程助手，需要 CLI 访问（gemini/qwen CLI） |
-| `tech-mentor` | 大师 | off | ❌ 禁止 | AI导师，需 spawn coder-hub |
-| `work-hub` | 金牛 | off | ❌ 禁止 | 工作中枢 |
-| `venture-hub` | - | off | ❌ 禁止 | 创业中枢 |
-| `life-hub` | 小机 | off | ❌ 禁止 | 生活中枢 |
-| `product-studio` | - | off | ❌ 禁止 | 产品设计 |
-| `zh-scribe` | 水哥 | off | ❌ 禁止 | 中文成文 |
+| `neo` | Guardian | off | ✅ 允许 | 系统守护者，需要系统级访问 |
+| `link` | Operator | off | ✅ 允许 | 编程助手+运维，需要 CLI 访问 |
+| `trinity` | Worker | off | ❌ 禁止 | 工作中枢 |
+| `morpheus` | Strategist | off | ❌ 禁止 | 创业中枢 |
+| `oracle` | Mentor | off | ❌ 禁止 | AI导师+生活中枢 |
+| `smith` | Challenger | off | ❌ 禁止 | 挑战者 |
+| `architect` | Designer | off | ❌ 禁止 | 产品设计 |
+| `theodore` | Scribe | off | ❌ 禁止 | 中文成文 |
 
 **配置示例**：
 ```json
 {
-  "id": "tech-mentor",
+  "id": "oracle",
   "sandbox": { "mode": "off" },
   "tools": { "deny": ["exec", "process"] }
 }
@@ -271,7 +301,7 @@ ssh admin@47.82.234.46 'journalctl --user -u openclaw-gateway -n 30 --no-pager'
 
 ### 新智能体认证缺失
 - 新建智能体目录后，如果没有复制 `auth-profiles.json` 和 `models.json`，会导致所有模型报认证错误
-- **解决**：从现有智能体（如 `chief-of-staff`）复制这两个文件
+- **解决**：从现有智能体（如 `Chief-of-staff`）复制这两个文件
 
 ### 密钥存储双层机制（2026-04-07 发现）
 - OpenClaw 使用**双层密钥解析**：进程启动时需要环境变量，运行时需要 SecretRef 解析
@@ -303,6 +333,12 @@ ssh admin@47.82.234.46 'journalctl --user -u openclaw-gateway -n 30 --no-pager'
 - **正确**：`folder_token` 必须在 Body 中传递
 - **根目录限制**：无法在根目录直接创建文件夹，必须指定父文件夹 token
 - **详细记录**：`docs/troubleshooting-feishu-drive-api.md`
+
+### 飞书 WebSocket 连接问题（2026-04-12 新发现）
+- **错误**：`Request failed with status code 400` on ping endpoint
+- **症状**：`ws unable to connect to the server after trying N times`
+- **原因**：新创建的飞书应用缺少开放平台配置（事件订阅、权限）
+- **解决**：在飞书开放平台为每个应用配置事件订阅和权限
 
 ---
 

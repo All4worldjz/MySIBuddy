@@ -2,15 +2,20 @@
 
 `MySiBuddy` 是一个**控制平面仓库**，用于部署、加固和运维基于 OpenClaw 的个人智能体系统。这**不是**应用源代码仓库，而是生产环境的配置和运维仓库。
 
-## 生产环境
+## 生产环境（2026-04-12 实际配置）
 
 | 项目 | 值 |
 |------|-----|
 | 服务器 | `admin@47.82.234.46` |
-| OpenClaw | `2026.4.5` |
+| OpenClaw | `2026.4.9`（有更新 `2026.4.11` 可用） |
 | Node.js | `24.13.0` |
-| 智能体 | 8 个（chief-of-staff + coder-hub + 6 hubs） |
-| 渠道 | Telegram 3账号 + Feishu 2账号 |
+| 智能体 | 8 个（neo, link, trinity, morpheus, oracle, smith, architect, theodore） |
+| 渠道 | Telegram 8账号 + Feishu 7账号 |
+| Bindings | 27条路由规则 |
+| 系统资源 | 磁盘: 49G总容量，66%使用率 (17G可用) |
+| 系统资源 | 内存: 1.8G总容量，Gateway占用约721MB (40%) |
+| 系统资源 | CPU: Gateway进程占用11.1% |
+| 统一搜索服务 | 运行正常 (端口18790) |
 
 ## 分支策略
 
@@ -49,18 +54,18 @@ MySiBuddy/
 
 ## 核心架构
 
-### 智能体拓扑（8个）
+### 智能体拓扑（2026-04-11 重设计）
 
-| Agent | 别名 | 角色 | 渠道入口 | Exec 权限 |
-|-------|------|------|----------|-----------|
-| `chief-of-staff` | 小春 | 编排器 | Telegram chief | ✅ |
-| `coder-hub` | 小码哥 | 编程助手 | 内部调用 | ✅ |
-| `work-hub` | 金牛 | 工作中枢 | Feishu work | ❌ |
-| `venture-hub` | - | 创业中枢 | Telegram personal (群组) | ❌ |
-| `life-hub` | 小机 | 生活中枢 | Telegram personal | ❌ |
-| `product-studio` | - | 产品设计 | 无直接入口 | ❌ |
-| `zh-scribe` | 水哥 | 中文成文 | Feishu scribe | ❌ |
-| `tech-mentor` | 大师 | AI导师 | Telegram mentor | ❌ |
+| Agent | 角色 | 渠道入口 | Exec 权限 | 备注 |
+|-------|------|----------|-----------|------|
+| `neo` | Guardian | Telegram neo | ✅ | 原 chief-of-staff |
+| `link` | Operator | Telegram link, Feishu link | ✅ | 原 coder-hub + sysop |
+| `trinity` | Worker | Telegram trinity, Feishu work | ❌ | 原 work-hub |
+| `morpheus` | Strategist | Telegram morpheus | ❌ | 原 venture-hub |
+| `oracle` | Mentor | Telegram oracle | ❌ | 原 tech-mentor + life-hub |
+| `smith` | Challenger | Telegram smith | ❌ | 新建 |
+| `architect` | Designer | Telegram architect | ❌ | 原 product-studio |
+| `theodore` | Scribe | Telegram theodore, Feishu scribe | ❌ | 原 zh-scribe |
 
 ### 模型路由
 
@@ -69,7 +74,7 @@ MySiBuddy/
 | MiniMax (`MiniMax-M2.7`) | 主模型 |
 | ModelStudio (`qwen3.5-plus`, `kimi-k2.5`) | 备用模型 |
 
-### 安全配置（2026-04-07 更新）
+### 安全配置（2026-04-11 实际状态）
 
 | 措施 | 状态 |
 |------|------|
@@ -78,7 +83,9 @@ MySiBuddy/
 | 防火墙 | SSH(22) + 已建立连接 + 本地回环 |
 | Swap | 4GB |
 | Sandbox | 所有 agents 移除沙盒，通过工具权限控制安全 |
-| Exec 权限 | 仅 chief-of-staff 和 coder-hub 允许 |
+| Exec 权限 | 仅 neo 和 link 允许 |
+| 统一搜索服务 | 运行中（端口18790） |
+| Web搜索提供商 | unified_search（已配置并启用） |
 
 ## 运维命令
 

@@ -62,18 +62,20 @@ Assume human partners may be non-technical.
 - Plugin policy must explicitly preserve required stock plugins.
 - Never overwrite production `openclaw.json` with an incomplete object; candidate configs must preserve the full current topology unless the user explicitly wants topology change.
 
-## 6. Alias Mapping (2026-04-08 Standard)
+## 6. Alias Mapping (2026-04-11 Updated)
 
 When interacting within this repository or across agents, use these aliases:
 
-| Agent ID | Alias |
-| :--- | :--- |
-| `chief-of-staff` | 小春 |
-| `tech-mentor` | 大师 |
-| `work-hub` | 金牛 |
-| `zh-scribe` | 水哥 |
-| `life-hub` | 小机 |
-| `coder-hub` | 小码哥 |
+| Agent ID | 角色 | 备注 |
+| :--- | :--- | :--- |
+| `neo` | Guardian | 原 chief-of-staff |
+| `link` | Operator | 原 coder-hub + sysop |
+| `trinity` | Worker | 原 work-hub |
+| `morpheus` | Strategist | 原 venture-hub |
+| `oracle` | Mentor | 原 tech-mentor + life-hub |
+| `smith` | Challenger | 新建 |
+| `architect` | Designer | 原 product-studio |
+| `theodore` | Scribe | 原 zh-scribe |
 
 ## 7. Definition of Done
 
