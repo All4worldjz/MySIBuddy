@@ -51,6 +51,7 @@ MySiBuddy/
 | AI 智能体操作规则 | [`AGENTS.md`](AGENTS.md) |
 | 部署/排错 OpenClaw | [`skills/openclaw-plugin-channel-recovery/SKILL.md`](skills/openclaw-plugin-channel-recovery/SKILL.md) |
 | 备份配置 | [`skills/backup-openclaw/SKILL.md`](skills/backup-openclaw/SKILL.md) |
+| 系统升级 | [`skills/openclaw-system-upgrade/SKILL.md`](skills/openclaw-system-upgrade/SKILL.md) |
 
 ## 核心架构
 
