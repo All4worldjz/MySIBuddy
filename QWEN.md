@@ -4,7 +4,7 @@
 
 **MySiBuddy** 是一个**控制平面仓库**，用于部署、加固和运维基于 OpenClaw 的个人智能体系统。这**不是**应用源代码仓库，而是生产环境的配置和运维仓库。
 
-生产系统运行在远程 Linux 服务器 `admin@47.82.234.46` 上，使用 OpenClaw `2026.4.9`（有更新 `2026.4.11` 可用）和 Node `24.13.0`。
+生产系统运行在远程 Linux 服务器 `admin@47.82.234.46` 上，使用 OpenClaw `2026.4.11` 和 Node `24.13.0`。
 
 ### 核心架构
 
@@ -69,6 +69,16 @@
 - `AGENTS.md`：仓库级 AI 智能体操作规则（变更顺序、备份纪律、人机协作规范）
 - `session_handoff.md`：生产变更日志和当前状态记录
 - `docs/openclaw-secrets-configuration.md`：**密钥配置指南**（双层存储架构、SecretRef格式、排错经验）
+- `QWEN.md`：**系统运维核心文档**（包含全量备份方法铁律）
+
+### 备份与升级策略（铁律）
+- **全量备份路径**：`~/mysibuddy_vault/backup` (远程) 和 `/Users/whoami2028/Workshop/MySiBuddy_Vault/backup` (本地)
+- **备份脚本**：`~/mysibuddy_vault/backup/create_full_backup.sh`
+- **升级脚本**：`~/mysibuddy_vault/backup/upgrade_openclaw.sh`
+- **回滚脚本**：`~/mysibuddy_vault/backup/rollback_openclaw.sh`
+- **备份频率**：每次重大变更前必须执行全量备份
+- **验证步骤**：备份后必须验证备份完整性并下载到本地
+- **服务停止**：升级前必须停止所有相关服务
 
 ### 防护脚本（`scripts/`）
 - `safe_openclaw_validate.sh`：验证候选配置（JSON 语法 + 拓扑检查）
