@@ -1,0 +1,61 @@
+{
+  "system": {
+    "disk": {
+      "warnPercent": 80,
+      "critPercent": 95,
+      "excludeFs": ["tmpfs", "devtmpfs", "squashfs", "efivarfs", "vfat"]
+    },
+    "cpu": {
+      "warnPercent": 70,
+      "critPercent": 90,
+      "sampleIntervalMs": 300
+    },
+    "memory": {
+      "warnPercent": 80,
+      "critPercent": 95
+    },
+    "load": {
+      "warnRatio": 0.7,
+      "critRatio": 1.0
+    },
+    "process": {
+      "warnCpuPercent": 80,
+      "warnMemPercent": 80,
+      "critCpuPercent": 95,
+      "critMemPercent": 95,
+      "topN": 5
+    }
+  },
+  "openclaw": {
+    "gateway": {
+      "checkCommand": "pgrep -f openclaw-gateway",
+      "timeoutSeconds": 5
+    },
+    "token": {
+      "warnPercent": 75,
+      "critPercent": 90
+    },
+    "memory": {
+      "checkDeepTimeoutSeconds": 8,
+      "requireFtsReady": true,
+      "requireVectorReady": false
+    },
+    "channels": {
+      "required": ["telegram", "feishu"],
+      "checkTimeoutSeconds": 10
+    }
+  },
+  "cronTasks": {
+    "consecutiveErrorsThreshold": 2,
+    "durationMultiplierThreshold": 2.0,
+    "scheduleDeviationMinutes": 5,
+    "requiredFields": [
+      "id",
+      "name",
+      "agentId",
+      "enabled",
+      "schedule",
+      "state"
+    ]
+  }
+}

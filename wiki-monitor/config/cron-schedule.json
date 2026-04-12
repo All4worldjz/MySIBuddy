@@ -1,0 +1,22 @@
+{
+  "wikiSync": {
+    "schedule": "*/15 * * * *",
+    "enabled": true,
+    "description": "Wiki Git 自动同步"
+  },
+  "feishuToWiki": {
+    "schedule": "0 */6 * * *",
+    "enabled": true,
+    "description": "飞书 → Wiki 同步"
+  },
+  "wikiToFeishu": {
+    "schedule": "0 3 * * *",
+    "enabled": true,
+    "description": "Wiki → 飞书同步"
+  },
+  "wikiHealth": {
+    "schedule": "0 6 * * *",
+    "enabled": true,
+    "description": "Wiki 健康检查"
+  }
+}

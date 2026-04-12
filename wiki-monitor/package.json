@@ -1,0 +1,42 @@
+{
+  "name": "wiki-monitor",
+  "version": "1.0.0",
+  "description": "本地 Wiki 监控工具 - 服务器定时任务的本地镜像版本",
+  "main": "src/monitor.js",
+  "scripts": {
+    "monitor": "node src/monitor.js",
+    "monitor:watch": "node src/monitor.js --watch",
+    "monitor:dry-run": "node src/monitor.js --dry-run",
+    "test:wiki-sync": "node src/wiki-sync.js",
+    "test:feishu-to-wiki": "node src/feishu-to-wiki.js",
+    "test:wiki-to-feishu": "node src/wiki-to-feishu.js",
+    "test:wiki-health": "node src/wiki-health.js",
+    "test": "jest tests/",
+    "test:integration": "jest tests/integration/",
+    "test:feishu-connection": "node tests/feishu-connection.js",
+    "logs": "tail -f logs/*.log"
+  },
+  "keywords": [
+    "wiki",
+    "monitor",
+    "feishu",
+    "sync",
+    "openclaw"
+  ],
+  "author": "tech-mentor (大师)",
+  "license": "MIT",
+  "dependencies": {
+    "node-cron": "^3.0.3",
+    "simple-git": "^3.22.0",
+    "winston": "^3.11.0",
+    "axios": "^1.6.7",
+    "dotenv": "^16.4.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nock": "^13.5.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

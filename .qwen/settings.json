@@ -262,7 +262,12 @@
       "Bash(source_token: *)",
       "Bash(synced_at: *)",
       "Bash($wiki_export_folder_name\\\")",
-      "Bash(.token\" 2>/dev/null || echo \"\")\n    \n    if [[ -n \"$folder_token\" && \"$folder_token\" != \"null\" ]]; then\n        echo \"$folder_token\"\n        return\n    fi\n    \n    log \"创建导出文件夹: *)"
+      "Bash(.token\" 2>/dev/null || echo \"\")\n    \n    if [[ -n \"$folder_token\" && \"$folder_token\" != \"null\" ]]; then\n        echo \"$folder_token\"\n        return\n    fi\n    \n    log \"创建导出文件夹: *)",
+      "Bash(npm install *)",
+      "Bash(npm test)",
+      "Bash(npm run *)",
+      "Bash(node *)",
+      "Bash(kill *)"
     ]
   },
   "$version": 3

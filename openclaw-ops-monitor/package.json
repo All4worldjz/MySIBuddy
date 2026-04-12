@@ -1,0 +1,34 @@
+{
+  "name": "openclaw-ops-monitor",
+  "version": "1.0.0",
+  "description": "OpenClaw 系统与应用全链路监控工具",
+  "main": "src/monitor.js",
+  "scripts": {
+    "monitor": "node src/monitor.js",
+    "monitor:watch": "node src/monitor.js --watch",
+    "monitor:dry-run": "node src/monitor.js --dry-run",
+    "check:cron": "node src/collectors/cron-tasks.js",
+    "check:system": "node src/collectors/system.js",
+    "check:openclaw": "node src/collectors/openclaw.js",
+    "report:latest": "cat reports/latest.md",
+    "alerts:history": "cat reports/alerts/history.log",
+    "test": "jest tests/"
+  },
+  "keywords": ["openclaw", "monitor", "health", "cron", "alert"],
+  "author": "tech-mentor (大师)",
+  "license": "MIT",
+  "dependencies": {
+    "node-cron": "^3.0.3",
+    "winston": "^3.11.0",
+    "axios": "^1.6.7",
+    "simple-git": "^3.22.0",
+    "ssh2": "^1.15.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nock": "^13.5.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

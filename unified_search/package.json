@@ -1,0 +1,24 @@
+{
+  "name": "unified_search",
+  "version": "1.0.0",
+  "description": "Unified search service with load balancing and smart routing",
+  "main": "search_service.js",
+  "scripts": {
+    "start": "node search_service.js",
+    "debug": "node --inspect search_service.js",
+    "debug-local": "SECRETS_PATH='./runtime-secrets.json' node --inspect debug_search_service.js",
+    "start-local": "SECRETS_PATH='./runtime-secrets.json' node debug_search_service.js",
+    "test": "node test_search.js"
+  },
+  "keywords": [
+    "search",
+    "api",
+    "unified",
+    "load-balancing"
+  ],
+  "author": "OpenClaw System",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.15.0"
+  }
+}

@@ -1,0 +1,750 @@
+{
+  "version": 1,
+  "jobs": [
+    {
+      "id": "b45c27bb-7fdf-41f2-af22-d3de5d1b556c",
+      "agentId": "chief-of-staff",
+      "sessionKey": "agent:chief-of-staff:telegram:direct:8606756625",
+      "name": "CC-ClaudeCode学习提醒",
+      "enabled": true,
+      "createdAtMs": 1774997544172,
+      "updatedAtMs": 1775761820506,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 10 3 * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "春哥提醒：《Claude Code vs OpenClaw 架构对比》学习材料已准备完毕，请安排时间系统学习。\n\n📚 知识库位置：\n- Claude Code 源码架构：memory/2026-04-01-claude-code-arch.md\n- OpenClaw 系统架构：memory/2026-04-01-openclaw-arch.md\n- 学习指南：memory/2026-04-01-claude-code-study-guide.md\n\n💡 建议优先关注：\n1. Claude Code 的 Hooks 运行时治理层设计（这与 OpenClaw 的设计思路有重要差异）\n2. 专业化 Built-in Agents（Explore/Plan/Verify）如何制度化\"好行为\"\n3. 动态 Prompt + 缓存优化策略（对理解生产成本很重要）\n\n请回复\"已学习\"或提出你的思考问题，我将安排进一步讨论。"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram"
+      },
+      "state": {
+        "nextRunAtMs": 1775848200000,
+        "lastRunAtMs": 1775761800003,
+        "lastRunStatus": "ok",
+        "lastStatus": "ok",
+        "lastDurationMs": 20503,
+        "lastDelivered": true,
+        "lastDeliveryStatus": "delivered",
+        "consecutiveErrors": 0
+      }
+    },
+    {
+      "id": "7c768e72-8252-4e6c-87fc-1f85433f7437",
+      "agentId": "work-hub",
+      "sessionKey": "agent:work-hub:feishu:direct:ou_04405f4e9dbe76c2cf241402bc2096b7",
+      "name": "存储与AI推理硬件每日报价动态",
+      "enabled": true,
+      "createdAtMs": 1775088229419,
+      "updatedAtMs": 1775754031922,
+      "schedule": {
+        "expr": "0 1 * * *",
+        "kind": "cron",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "你是一个专业的存储与AI硬件行业情报员。请执行以下任务：\n\n【任务】生成一份当日存储与AI推理硬件国内报价动态简报，输出给春哥。\n\n【数据获取方式】（必须全部使用 exec curl 调用本地 unify-search 服务）\n\n1. 存储市场动态：\n   执行：curl -s -X POST -H \"Content-Type: application/json\" -d '{\"query\": \"三星 DRAM NAND 存储芯片价格趋势 2026年4月\", \"scene\": \"TECH_RESEARCH\"}' http://127.0.0.1:18790 --max-time 30\n\n2. AI推理硬件动态：\n   执行：curl -s -X POST -H \"Content-Type: application/json\" -d '{\"query\": \"H100 GPU AI服务器 算力租赁价格 2026\", \"scene\": \"TECH_RESEARCH\"}' http://127.0.0.1:18790 --max-time 30\n\n3. 趋势与机构数据：\n   执行：curl -s -X POST -H \"Content-Type: application/json\" -d '{\"query\": \"TrendForce DDR5 NAND 闪存 DRAM 现货价格 2026\", \"scene\": \"GENERAL\"}' http://127.0.0.1:18790 --max-time 30\n\n【报告结构】\n📅 **存储与AI推理硬件每日报价动态**\n[当日日期]\n\n**一、存储市场动态（NAND/DRAM/eSSD）**\n- 主流产品报价区间（来自 unify-search Exa/Tavily）\n- 价格趋势判断（上涨/平稳/下跌）\n- 重要异动\n\n**二、AI推理硬件动态（GPU/AI服务器/云端实例）**\n- 主要AICelerator云实例价格变化\n- 推理服务器渠道价格\n- 重要新品或库存信息\n\n**三、简评**\n- 1-2句话定性当前市场状态\n- 与昨日/上周对比\n\n【输出要求】\n- 格式：简洁的飞书友好文本\n- 字数：300-600字\n- 语气：专业但易懂，适合管理层晨读\n- 如当日无重大变化，注明\"今日行情平稳，无显著异动\"\n\n直接输出报告正文即可，不要调用任何发送消息的工具。",
+        "timeoutSeconds": 180
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "feishu",
+        "to": "ou_04405f4e9dbe76c2cf241402bc2096b7",
+        "accountId": "work",
+        "bestEffort": true
+      },
+      "state": {
+        "nextRunAtMs": 1775840400000,
+        "lastRunAtMs": 1775754000004,
+        "lastRunStatus": "ok",
+        "lastStatus": "ok",
+        "lastDurationMs": 31918,
+        "lastDeliveryStatus": "not-delivered",
+        "consecutiveErrors": 0,
+        "lastDelivered": false
+      }
+    },
+    {
+      "id": "755c5e91-e67c-4cff-9dda-ae94009337ab",
+      "agentId": "life-hub",
+      "sessionKey": "agent:life-hub:telegram:direct:8606756625",
+      "name": "每日天气播报",
+      "enabled": true,
+      "createdAtMs": 1775604147642,
+      "updatedAtMs": 1775772061744,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 6 * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "请查询以下5个城市的当前天气和今日预报，使用 wttr.in（无需API Key）：\n\n1. 武汉光谷 (Wuhan Guanggu) - 坐标：30.47N, 114.31E\n2. 北京 (Beijing) - 坐标：39.91N, 116.39E\n3. 呼和浩特 (Hohhot) - 坐标：40.84N, 111.73E\n4. 深圳 (Shenzhen) - 坐标：22.54N, 114.06E\n5. 珠海 (Zhuhai) - 坐标：22.28N, 113.57E\n\n查询命令示例：\ncurl -s \"wttr.in/Wuhan?format=%l:+%c+%t+(feels+like+%f),+wind+%w,+humidity+%h\"\n\n请对每个城市分别执行 curl 查询，然后整理成一份简洁的早安天气报告，包含：\n- 城市名、天气状况、温度、体感温度\n- 风力、风向\n- 湿度\n- 出行/穿着建议（简要）\n\n报告语言为中文，格式清晰，用emoji区分不同城市的天气表情。",
+        "timeoutSeconds": 180
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram"
+      },
+      "state": {
+        "nextRunAtMs": 1775858400000,
+        "lastRunAtMs": 1775772000003,
+        "lastRunStatus": "ok",
+        "lastStatus": "ok",
+        "lastDurationMs": 61741,
+        "lastDeliveryStatus": "not-delivered",
+        "consecutiveErrors": 0,
+        "lastDelivered": false
+      }
+    },
+    {
+      "id": "1db28b74-be50-47a9-8bd2-6847a5eeeb5e",
+      "agentId": "coder-hub",
+      "name": "KM-Vault 飞书 raw 目录扫描",
+      "enabled": true,
+      "createdAtMs": 1775620858763,
+      "updatedAtMs": 1775786594371,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 * * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "执行 KM-Vault 飞书 raw 目录扫描：\n\n1. 使用 feishu_drive_file(action='list', folder_token='Oq9TfjXgIlygAQdaQkPcgunDnSO', page_size=50) 扫描飞书 My_KM_Vault raw 目录\n2. 筛选最近 1 小时内创建或修改的 docx/md 文档\n3. 对每个新文档调用 feishu_fetch_doc 获取内容\n4. 编译并使用 feishu_create_doc(folder_token='TvLofq3sBlO23ydx36Ncl3I8nig') 写入飞书 wiki 目录\n5. 完成后报告处理的文档数量\n\n注意：跳过已有的知识编译版文档（标题包含'知识编译版'）"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram",
+        "to": "8606756625",
+        "accountId": "mentor"
+      },
+      "state": {
+        "nextRunAtMs": 1775790134462,
+        "lastRunAtMs": 1775786534467,
+        "lastRunStatus": "ok",
+        "lastStatus": "ok",
+        "lastDurationMs": 59904,
+        "lastDeliveryStatus": "delivered",
+        "consecutiveErrors": 0,
+        "lastDelivered": true
+      },
+      "description": "每小时扫描飞书 My_KM_Vault raw 目录，发现新文档自动编译到 wiki"
+    },
+    {
+      "id": "a15b2f2c-b6b7-48ad-9b88-df64561df2f2",
+      "agentId": "tech-mentor",
+      "sessionKey": "agent:tech-mentor:telegram:direct:8606756625",
+      "name": "KM-Vault 每周系统巡检",
+      "description": "KM-Vault 每周系统巡检",
+      "enabled": true,
+      "createdAtMs": 1775621182353,
+      "updatedAtMs": 1775621182353,
+      "schedule": {
+        "expr": "0 22 * * 0",
+        "kind": "cron",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "执行 KM-Vault 知识库每周巡检：1) 检查飞书 My_KM_Vault (token QB50fa4HYlYPCRd5Q8Cck6MMnvf) 各目录（raw/wiki/schema/docs）文档数量；2) 检查 docker container km-vault-runner 是否运行正常；3) 生成巡检报告（文档数量、健康状态、待处理事项）；4) 通过 feishu_im_user_message 工具以用户身份发送巡检报告给春哥（user_id: ou_04405f4e9dbe76c2cf241402bc2096b7）。报告语言为中文。"
+      },
+      "delivery": {
+        "mode": "announce",
+        "to": "8606756625",
+        "channel": "telegram"
+      },
+      "state": {
+        "nextRunAtMs": 1776002400000
+      }
+    },
+    {
+      "id": "85b2866b-df30-4791-9b4e-8691a53d62e8",
+      "agentId": "work-hub",
+      "sessionKey": "agent:work-hub:feishu:direct:ou_04405f4e9dbe76c2cf241402bc2096b7",
+      "name": "GPU/CPU/内存/硬盘/AIDC建设情报每日报送",
+      "enabled": true,
+      "createdAtMs": 1775628062198,
+      "updatedAtMs": 1775774510344,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 40 6 * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "你是一个专业的AI基础设施硬件行业情报员。请执行以下任务：\n\n【任务】生成一份当日 GPU/CPU/内存/硬盘/AIDC 建设情报简报，输出给春哥。\n\n【数据获取方式】（必须全部使用 exec curl 调用本地 unify-search 服务）\n\n1. GPU设备动态（英伟达 & AMD）：\n   执行：curl -s -X POST -H \"Content-Type: application/json\" -d '{\"query\": \"英伟达 AMD GPU AI芯片 价格 供货 2026年4月\", \"scene\": \"TECH_RESEARCH\"}' http://127.0.0.1:18790 --max-time 30\n\n2. CPU设备动态：\n   执行：curl -s -X POST -H \"Content-Type: application/json\" -d '{\"query\": \"Intel AMD CPU 服务器处理器 价格趋势 2026\", \"scene\": \"TECH_RESEARCH\"}' http://127.0.0.1:18790 --max-time 30\n\n3. 内存与硬盘动态：\n   执行：curl -s -X POST -H \"Content-Type: application/json\" -d '{\"query\": \"DDR5 HBM 内存 NAND SSD 硬盘 价格趋势 2026年4月\", \"scene\": \"TECH_RESEARCH\"}' http://127.0.0.1:18790 --max-time 30\n\n4. AIDC（AI数据中心）建设情报：\n   执行：curl -s -X POST -H \"Content-Type: application/json\" -d '{\"query\": \"AI数据中心 AIDC 智算中心 建设 投资 2026\", \"scene\": \"TECH_RESEARCH\"}' http://127.0.0.1:18790 --max-time 30\n\n【报告结构】\n📅 **GPU/CPU/内存/硬盘/AIDC建设情报**\n[当日日期]\n\n**一、GPU设备动态（英伟达 & AMD）**\n- 英伟达：主流GPU供货与价格变化\n- AMD：GPU产品动态\n- 重要异动\n\n**二、CPU设备动态**\n- 主流服务器CPU报价与趋势\n- 重要新品或库存信息\n\n**三、内存与硬盘**\n- 内存：DDR5/HBM等主流产品报价\n- 硬盘：NAND/SSD价格趋势\n\n**四、AIDC建设情报**\n- 国内智算中心/数据中心新建动态\n- 重要投资项目\n\n**五、简评**\n- 1-2句话定性当前市场状态\n- 与昨日/上周对比\n\n【输出要求】\n- 格式：简洁的飞书友好文本\n- 字数：300-600字\n- 语气：专业但易懂，适合管理层晨读\n- 如当日无重大变化，注明\"今日行情平稳，无显著异动\"\n\n直接输出报告正文即可，不要调用任何发送消息的工具。",
+        "timeoutSeconds": 180
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "feishu",
+        "to": "ou_04405f4e9dbe76c2cf241402bc2096b7",
+        "accountId": "work",
+        "bestEffort": true
+      },
+      "state": {
+        "nextRunAtMs": 1775860800000,
+        "lastRunAtMs": 1775774420790,
+        "lastRunStatus": "ok",
+        "lastStatus": "ok",
+        "lastDurationMs": 89554,
+        "lastDelivered": true,
+        "lastDeliveryStatus": "delivered",
+        "consecutiveErrors": 0
+      }
+    },
+    {
+      "id": "3b340869-404d-4c73-9500-b3c10dcbb059",
+      "agentId": "coder-hub",
+      "sessionKey": "agent:tech-mentor:telegram:direct:8606756625",
+      "name": "KM-Vault 飞书入库触发",
+      "description": "扫描飞书入库触发区，自动处理新文档",
+      "enabled": true,
+      "createdAtMs": 1775631334202,
+      "updatedAtMs": 1775750529160,
+      "schedule": {
+        "expr": "0 */12 * * *",
+        "kind": "cron",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "执行飞书入库触发扫描：\n\n1. 使用 feishu_drive_file(action='list', folder_token='Xl7tfFnwQl9n6vd8Hl5c8Vy2nBd', page_size=50) 扫描小春文件柜根目录\n2. 筛选最近 10 分钟内创建的 docx 文档（通过 created_time 判断）\n3. 对每个新文档调用 feishu_fetch_doc 获取内容\n4. 编译并使用 feishu_create_doc(folder_token='QB50fa4HYlYPCRd5Q8Cck6MMnvf') 写入知识库\n5. 完成后报告处理的文档数量\n\n注意：跳过已有的知识编译版文档（标题包含'知识编译版'）"
+      },
+      "delivery": {
+        "mode": "announce",
+        "to": "8606756625",
+        "channel": "telegram"
+      },
+      "state": {
+        "nextRunAtMs": 1775793642441,
+        "lastRunAtMs": 1775750442446,
+        "lastRunStatus": "ok",
+        "lastStatus": "ok",
+        "lastDurationMs": 86714,
+        "lastDelivered": true,
+        "lastDeliveryStatus": "delivered",
+        "consecutiveErrors": 0
+      }
+    },
+    {
+      "id": "51289580-1da1-41f5-af4b-0c05afc19f01",
+      "agentId": "chief-of-staff",
+      "sessionKey": "agent:chief-of-staff:telegram:direct:8606756625",
+      "name": "情报雷达-早报 (08:00)",
+      "description": "每日 08:00 情报早报 → 扫描 → 存飞书 → 推送链接",
+      "enabled": true,
+      "createdAtMs": 1775701092415,
+      "updatedAtMs": 1775779410706,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 8 * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "执行情报雷达早报扫描。运行命令: cd /home/admin/.openclaw/workspace-chief/intelligence-radar && python3 scripts/run_daily.py morning\n完成后将报告保存到飞书【小春文件柜】并推送链接。报告标题格式: 📡 情报早报 | YYYY-MM-DD",
+        "model": "minimax/MiniMax-M2.7",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram",
+        "to": "8606756625"
+      },
+      "state": {
+        "nextRunAtMs": 1775865600000,
+        "lastRunAtMs": 1775779200005,
+        "lastRunStatus": "ok",
+        "lastStatus": "ok",
+        "lastDurationMs": 210701,
+        "lastError": null,
+        "lastDelivered": true,
+        "lastDeliveryStatus": "delivered",
+        "consecutiveErrors": 0
+      }
+    },
+    {
+      "id": "ee5c4b7e-47e6-4a36-9358-047fe29ed705",
+      "agentId": "chief-of-staff",
+      "sessionKey": "agent:chief-of-staff:telegram:direct:8606756625",
+      "name": "情报雷达-晚报 (18:00)",
+      "description": "每日 18:00 情报晚报 → 扫描 → 存飞书 → 推送链接",
+      "enabled": true,
+      "createdAtMs": 1775701092510,
+      "updatedAtMs": 1775728941781,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 18 * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "执行情报雷达晚报扫描。运行命令: cd /home/admin/.openclaw/workspace-chief/intelligence-radar && python3 scripts/run_daily.py evening\n完成后将报告保存到飞书【小春文件柜】并推送链接。报告标题格式: 🌙 情报晚报 | YYYY-MM-DD",
+        "model": "minimax/MiniMax-M2.7",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram",
+        "to": "8606756625"
+      },
+      "state": {
+        "nextRunAtMs": 1775815200000,
+        "lastRunAtMs": 1775728800017,
+        "lastRunStatus": "ok",
+        "lastStatus": "ok",
+        "lastDurationMs": 141764,
+        "lastDelivered": true,
+        "lastDeliveryStatus": "delivered",
+        "consecutiveErrors": 0
+      }
+    },
+    {
+      "id": "1065752e-5f5a-44ad-b2a4-a6519f17b5dd",
+      "agentId": "chief-of-staff",
+      "sessionKey": "agent:chief-of-staff:telegram:direct:8606756625",
+      "name": "情报雷达-突发检测 (每4h)",
+      "description": "每4小时检测突发P0/P1 → 飞书卡片实时推送",
+      "enabled": true,
+      "createdAtMs": 1775701092657,
+      "updatedAtMs": 1775779562521,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 */4 * * *",
+        "tz": "Asia/Shanghai",
+        "staggerMs": 300000
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "执行突发快讯检测。运行命令: cd /home/admin/.openclaw/workspace-chief/intelligence-radar && python3 scripts/run_daily.py flash\n如果发现 P0/P1 情报，立即通过飞书卡片消息推送给我（发送到我的飞书）。标题格式: 🚨 突发快讯 | HH:MM",
+        "model": "minimax/MiniMax-M2.7",
+        "timeoutSeconds": 300
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram",
+        "to": "8606756625"
+      },
+      "state": {
+        "nextRunAtMs": 1775793865271,
+        "lastRunAtMs": 1775779525109,
+        "lastRunStatus": "ok",
+        "lastStatus": "ok",
+        "lastDurationMs": 37412,
+        "lastDelivered": true,
+        "lastDeliveryStatus": "delivered",
+        "consecutiveErrors": 0
+      }
+    },
+    {
+      "id": "6f7d1857-85ab-4d77-a5f5-334f3391a1c2",
+      "agentId": "chief-of-staff",
+      "sessionKey": "agent:chief-of-staff:telegram:direct:8606756625",
+      "name": "系统健康 hourly 报告",
+      "description": "每小时向春哥发送系统健康监控报告（Telegram）",
+      "enabled": true,
+      "createdAtMs": 1775707471856,
+      "updatedAtMs": 1775787883055,
+      "schedule": {
+        "kind": "every",
+        "everyMs": 3600000,
+        "anchorMs": 0
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "请执行系统健康监控报告任务：\n\n1. 在主会话运行脚本：bash /home/admin/.openclaw/scripts/system_health_report.sh\n2. 捕获完整输出\n3. 使用 message 工具发送给春哥（target: 8606756625, channel: telegram）\n4. 保持 Markdown 格式原样\n\n这是每小时的健康监控报告，请立即执行。",
+        "model": "minimax/MiniMax-M2.7",
+        "timeoutSeconds": 90
+      },
+      "delivery": {
+        "mode": "announce",
+        "to": "8606756625",
+        "channel": "telegram"
+      },
+      "state": {
+        "nextRunAtMs": 1775791408400,
+        "lastRunAtMs": 1775787808400,
+        "lastRunStatus": "ok",
+        "lastStatus": "ok",
+        "lastDurationMs": 74655,
+        "lastDeliveryStatus": "delivered",
+        "consecutiveErrors": 0,
+        "lastDelivered": true
+      }
+    },
+    {
+      "id": "f38730ff-fc00-4373-9660-fde4aad8395e",
+      "agentId": "chief-of-staff",
+      "sessionKey": "agent:chief-of-staff:telegram:direct:8606756625",
+      "name": "系统健康异常告警",
+      "description": "每 30 分钟检查系统健康，超阈值立即推送 Telegram 告警",
+      "enabled": true,
+      "createdAtMs": 1775708286103,
+      "updatedAtMs": 1775789756152,
+      "schedule": {
+        "kind": "every",
+        "everyMs": 1800000,
+        "anchorMs": 1775708286103
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "执行快速健康检查：\n\nbash /home/admin/.openclaw/scripts/system_health_alert.sh\n\n如果有输出（紧急告警），通过 Telegram 发送给我（target: 8606756625）。\n如果输出\"无紧急告警\"，不发送任何消息。",
+        "model": "minimax/MiniMax-M2.7",
+        "timeoutSeconds": 120
+      },
+      "delivery": {
+        "mode": "announce",
+        "to": "8606756625",
+        "channel": "telegram"
+      },
+      "state": {
+        "nextRunAtMs": 1775791494883,
+        "lastRunAtMs": 1775789694883,
+        "lastRunStatus": "ok",
+        "lastStatus": "ok",
+        "lastDurationMs": 61269,
+        "lastDeliveryStatus": "delivered",
+        "consecutiveErrors": 0,
+        "lastDelivered": true
+      }
+    },
+    {
+      "id": "e3ef02e7-a7b6-46c3-9dea-bfa3acb0dc06",
+      "agentId": "chief-of-staff",
+      "sessionKey": "agent:chief-of-staff:telegram:direct:8606756625",
+      "name": "Brain Dump 研究提醒",
+      "enabled": true,
+      "deleteAfterRun": true,
+      "createdAtMs": 1775712264263,
+      "updatedAtMs": 1775712264263,
+      "schedule": {
+        "kind": "at",
+        "at": "2026-04-12T02:00:00.000Z"
+      },
+      "sessionTarget": "session:agent:chief-of-staff:telegram:direct:8606756625",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "春哥，周末了，继续 Brain Dump → Skill 技术研究吗？\n\n待决策：\n1. 选择首个 Brain Dump 实验场景（如\"嘉宾介绍写作\"）\n2. 确定技术路径（对话式/行为克隆/交互式）\n3. 是否自建 SkillHub 实例\n\n参考：memory/2026-04-09-brain-dump-skill-research.md"
+      },
+      "delivery": {
+        "mode": "announce",
+        "to": "8606756625",
+        "channel": "telegram"
+      },
+      "state": {
+        "nextRunAtMs": 1775959200000
+      }
+    },
+    {
+      "id": "8e28b39e-e4bb-4000-9d4c-2a5a6bc69906",
+      "agentId": "work-hub",
+      "sessionKey": "agent:work-hub:feishu:direct:ou_04405f4e9dbe76c2cf241402bc2096b7",
+      "name": "Review unify_search 能力提醒",
+      "enabled": true,
+      "createdAtMs": 1775713577007,
+      "updatedAtMs": 1775713577007,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 10 * * 6",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "【提醒】请 Review unify_search 能力——确认它是 OpenClaw 内置工具还是独立微服务，建议查看源码确认其定位和功能边界。"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "feishu",
+        "to": "user:ou_04405f4e9dbe76c2cf241402bc2096b7",
+        "bestEffort": true
+      },
+      "state": {
+        "nextRunAtMs": 1775872800000
+      }
+    },
+    {
+      "id": "ffd9fcb9-8b76-4918-8ce5-3c4bca823ac2",
+      "agentId": "chief-of-staff",
+      "name": "每日系统自动维护",
+      "enabled": true,
+      "createdAtMs": 1775738963182,
+      "updatedAtMs": 1775761358298,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 3 * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "【自动维护】执行系统日常维护任务：1) 运行 openclaw tasks maintenance --apply 清理僵死任务；2) 运行 openclaw memory index --force 重建内存索引；3) 汇报修复了多少任务、索引更新了多少文件。若 audit errors > 0，通过 Telegram 发送告警给春哥。"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram",
+        "to": "8606756625"
+      },
+      "state": {
+        "nextRunAtMs": 1775847600000,
+        "lastRunAtMs": 1775761200005,
+        "lastRunStatus": "ok",
+        "lastStatus": "ok",
+        "lastDurationMs": 158293,
+        "lastError": null,
+        "lastDeliveryStatus": "unknown",
+        "consecutiveErrors": 0
+      }
+    },
+    {
+      "id": "c54ceb70-69cd-4d05-84d4-db67b2b2656e",
+      "agentId": "chief-of-staff",
+      "sessionKey": "agent:chief-of-staff:telegram:direct:8606756625",
+      "name": "CalDAV 日历同步（每10分钟）",
+      "description": "每10分钟从 WPS CalDAV 同步日历事件到飞书日历",
+      "enabled": true,
+      "createdAtMs": 1775747897928,
+      "updatedAtMs": 1775789354207,
+      "schedule": {
+        "kind": "every",
+        "everyMs": 600000,
+        "anchorMs": 1775747897928
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "请执行 CalDAV 日历同步脚本，仅记录日志，不要发送任何消息给用户：\n\nbash /home/admin/.openclaw/scripts/caldav_sync.sh\n\n同步完成后，输出简要报告到日志即可，不要调用任何消息发送工具。",
+        "timeoutSeconds": 120
+      },
+      "delivery": {
+        "mode": "none",
+        "channel": "telegram"
+      },
+      "state": {
+        "nextRunAtMs": 1775789898456,
+        "lastRunAtMs": 1775789298456,
+        "lastRunStatus": "ok",
+        "lastStatus": "ok",
+        "lastDurationMs": 55751,
+        "lastDeliveryStatus": "not-delivered",
+        "consecutiveErrors": 0,
+        "lastDelivered": false,
+        "runningAtMs": 1775789898458
+      }
+    },
+    {
+      "id": "sys-migrated-1",
+      "agentId": "chief-of-staff",
+      "name": "AI News Hub (系统迁移)",
+      "enabled": true,
+      "createdAtMs": 1775789282157,
+      "updatedAtMs": 1775789282157,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 8 * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "执行 AI News Hub 新闻采集脚本：\n\ncd /home/admin/ai-news-hub && bash cron.sh\n\n将执行结果保存到飞书【小春文件柜】并推送 Telegram 链接给我（8606756625）。\n报告标题格式：📰 AI News Hub | YYYY-MM-DD",
+        "timeoutSeconds": 300
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram",
+        "to": "8606756625"
+      },
+      "state": {
+        "consecutiveErrors": 0,
+        "nextRunAtMs": 1775865600000
+      }
+    },
+    {
+      "id": "sys-migrated-2",
+      "agentId": "coder-hub",
+      "name": "Wiki Git 自动同步 (系统迁移)",
+      "description": "每 15 分钟同步 Wiki 到 GitHub",
+      "enabled": true,
+      "createdAtMs": 1775789282157,
+      "updatedAtMs": 1775789282157,
+      "schedule": {
+        "kind": "cron",
+        "expr": "*/15 * * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "执行 Wiki Git 同步：\n\ncd /home/admin/.openclaw/wiki/main\ngit pull --rebase origin main >> /home/admin/.openclaw/logs/wiki-git-sync.log 2>&1\ngit add .\n(git diff --cached --quiet || git commit -m \"自动同步 Wiki\") && git push origin main >> /home/admin/.openclaw/logs/wiki-git-sync.log 2>&1\n\n仅记录日志，不要发送消息。如果有错误（如 push 失败），才通过 Telegram 报告错误。",
+        "timeoutSeconds": 120
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram",
+        "to": "8606756625"
+      },
+      "state": {
+        "consecutiveErrors": 0,
+        "nextRunAtMs": 1775790000000
+      }
+    },
+    {
+      "id": "sys-migrated-3",
+      "agentId": "coder-hub",
+      "name": "Wiki 自动编译 (系统迁移)",
+      "description": "每小时编译 Wiki",
+      "enabled": true,
+      "createdAtMs": 1775789282157,
+      "updatedAtMs": 1775789282157,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 * * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "执行 Wiki 自动编译：\n\ncd /home/admin/.openclaw/wiki/main && openclaw wiki compile >> /home/admin/.openclaw/logs/wiki-compile.log 2>&1\n\n仅记录日志，不要发送消息。如果有编译错误，才通过 Telegram 报告错误。",
+        "timeoutSeconds": 180
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram",
+        "to": "8606756625"
+      },
+      "state": {
+        "consecutiveErrors": 0,
+        "nextRunAtMs": 1775790128069
+      }
+    },
+    {
+      "id": "sys-migrated-4",
+      "agentId": "coder-hub",
+      "name": "Wiki 飞书同步 (系统迁移)",
+      "description": "每天 03:00 Wiki 编译结果镜像到飞书",
+      "enabled": true,
+      "createdAtMs": 1775789282157,
+      "updatedAtMs": 1775789282157,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 3 * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "执行 Wiki 到飞书同步脚本：\n\nbash /home/admin/.openclaw/scripts/wiki_to_feishu_sync.sh >> /home/admin/.openclaw/logs/wiki-to-feishu-sync.log 2>&1\n\n仅记录日志，不要发送消息。如果有错误，才通过 Telegram 报告错误。",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram",
+        "to": "8606756625"
+      },
+      "state": {
+        "consecutiveErrors": 0,
+        "nextRunAtMs": 1775847600000
+      }
+    },
+    {
+      "id": "sys-migrated-5",
+      "agentId": "coder-hub",
+      "name": "飞书 Wiki 同步 (系统迁移)",
+      "description": "每 6 小时从飞书导出文档到 Wiki",
+      "enabled": true,
+      "createdAtMs": 1775789282157,
+      "updatedAtMs": 1775789282157,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 */6 * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "执行飞书到 Wiki 同步脚本：\n\npython3 /home/admin/.openclaw/scripts/feishu_to_wiki_sync.py >> /home/admin/.openclaw/logs/feishu-to-wiki-sync.log 2>&1\n\n仅记录日志，不要发送消息。如果有错误，才通过 Telegram 报告错误。",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram",
+        "to": "8606756625"
+      },
+      "state": {
+        "consecutiveErrors": 0,
+        "nextRunAtMs": 1775793878225
+      }
+    },
+    {
+      "id": "sys-migrated-6",
+      "agentId": "chief-of-staff",
+      "name": "系统健康深度检查 (系统迁移)",
+      "description": "每天 06:00 深度系统健康检查",
+      "enabled": true,
+      "createdAtMs": 1775789282157,
+      "updatedAtMs": 1775789282157,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 6 * * *",
+        "tz": "Asia/Shanghai"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "执行系统健康深度检查脚本：\n\nbash /home/admin/.openclaw/scripts/system_health_report.sh >> /home/admin/.openclaw/logs/wiki-health.log 2>&1\n\n将检查报告通过 Telegram 发送给我（8606756625）。保持 Markdown 格式。",
+        "timeoutSeconds": 120
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "telegram",
+        "to": "8606756625"
+      },
+      "state": {
+        "consecutiveErrors": 0,
+        "nextRunAtMs": 1775858400000
+      }
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "feishu": {
+    "appId": "cli_xxx",
+    "appSecret": "xxx",
+    "kmVaultToken": "QB50fa4HYlYPCRd5Q8Cck6MMnvf",
+    "baseUrl": "https://open.feishu.cn/open-apis"
+  },
+  "github": {
+    "sshKey": "~/.ssh/id_ed25519",
+    "repo": "git@github.com:All4worldjz/MySiBuddy-Wiki.git",
+    "branch": "main",
+    "commitMessage": "自动同步 Wiki"
+  },
+  "wiki": {
+    "localPath": "~/.openclaw/wiki/main",
+    "rawDir": "raw/articles",
+    "wikiDir": "wiki",
+    "exportFolderName": "Wiki 知识库镜像"
+  },
+  "logging": {
+    "level": "info",
+    "dir": "./logs",
+    "maxFiles": 10,
+    "maxSize": "10m"
+  },
+  "monitor": {
+    "enabled": true,
+    "dryRun": false,
+    "notifyOnComplete": false,
+    "notifyOnError": true
+  },
+  "telegram": {
+    "botToken": "",
+    "chatId": ""
+  }
+}
